@@ -2,18 +2,18 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <!-- Wichtig für Android Fullscreen und PWA-Verhalten -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#f0f0f0">
+    <link rel="manifest" href="manifest.json">
     <title>Mal-App</title>
     <style>
-        /* Grundlegendes Reset und Fullscreen-Setup */
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            user-select: none; /* Verhindert langes Drücken und Markieren */
+            user-select: none;
             -webkit-user-select: none;
         }
 
@@ -23,10 +23,9 @@
             overflow: hidden;
             background-color: #ffffff;
             font-family: sans-serif;
-            touch-action: none; /* Verhindert Scrollen beim Wischen */
+            touch-action: none;
         }
 
-        /* Werkzeugleiste oben */
         #toolbar {
             position: absolute;
             top: 0;
@@ -39,10 +38,9 @@
             padding: 0 10px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
             z-index: 10;
-            overflow-x: auto; /* Erlaubt wischen, falls der Bildschirm schmal ist */
+            overflow-x: auto;
         }
 
-        /* Standard-Buttons für Farben und Werkzeuge */
         .btn {
             width: 60px;
             height: 60px;
@@ -61,7 +59,6 @@
             transform: scale(0.9);
         }
 
-        /* Der Button für den Farbwähler (Rainbow) */
         .color-picker-wrapper {
             position: relative;
             width: 60px;
@@ -83,17 +80,15 @@
             left: 0;
         }
 
-        /* Spezifische Werkzeug-Buttons */
         #modeBtn {
-            background-color: #4CAF50; /* Startet Grün (Malen) */
-            margin-left: auto; /* Schiebt Werkzeuge nach rechts */
+            background-color: #4CAF50;
+            margin-left: auto;
         }
 
         #trashBtn {
             background-color: #555555;
         }
 
-        /* Canvas-Zeichenfläche */
         #canvas {
             position: absolute;
             top: 0;
@@ -103,7 +98,6 @@
             z-index: 1;
         }
 
-        /* Eltern-Menü (versteckt) */
         #parentMenu {
             display: none;
             position: absolute;
@@ -148,7 +142,6 @@
             background-color: #f44336;
         }
 
-        /* SVG Icons */
         svg {
             width: 35px;
             height: 35px;
@@ -158,35 +151,28 @@
 </head>
 <body>
 
-    <!-- Werkzeugleiste -->
     <div id="toolbar">
-        <!-- Farbauswahl komplett (Regenbogen) -->
         <div class="color-picker-wrapper">
             <input type="color" id="customColor" value="#000000">
         </div>
 
-        <!-- Vordefinierte Farben -->
         <div class="btn color-btn" style="background-color: #000000;" data-color="#000000"></div>
         <div class="btn color-btn" style="background-color: #2196F3;" data-color="#2196F3"></div>
         <div class="btn color-btn" style="background-color: #FFEB3B;" data-color="#FFEB3B"></div>
         <div class="btn color-btn" style="background-color: #4CAF50;" data-color="#4CAF50"></div>
 
-        <!-- Modus wechseln (Malen / Radieren) -->
         <div class="btn" id="modeBtn">
-            <!-- Stift Icon (Malen) -->
             <svg id="penIcon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
                 <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
                 <path d="M2 2l7.586 7.586"></path>
                 <circle cx="11" cy="11" r="2"></circle>
             </svg>
-            <!-- Radierer Icon (versteckt beim Start) -->
             <svg id="eraserIcon" style="display: none;" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M20 20H7L3 16C2.5 15.5 2.5 14.5 3 14L13 4C13.5 3.5 14.5 3.5 15 4L20 9C20.5 9.5 20.5 10.5 20 11L11 20H20V20Z"></path>
             </svg>
         </div>
 
-        <!-- Mülleimer (Alles löschen) -->
         <div class="btn" id="trashBtn">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
@@ -194,15 +180,13 @@
         </div>
     </div>
 
-    <!-- Zeichenfläche -->
     <canvas id="canvas"></canvas>
 
-    <!-- Verstecktes Elternmenü -->
     <div id="parentMenu">
         <div class="menu-box">
             <h2>Eltern-Optionen</h2>
             <button class="menu-btn" id="undoTrashBtn">Löschen rückgängig machen</button>
-            <button class="menu-btn" id="clearDataBtn">Speicher (Cookies) leeren</button>
+            <button class="menu-btn" id="clearDataBtn">Speicher leeren</button>
             <button class="menu-btn" id="printBtn">Kunstwerk drucken</button>
             <button class="menu-btn close" id="closeMenuBtn">Menü schließen</button>
         </div>
@@ -215,21 +199,18 @@
         let isDrawing = false;
         let isEraser = false;
         let currentColor = '#000000';
-        const lineWidth = 15; // Extra dick für Kinder
+        const lineWidth = 15;
         
-        // Canvas Größe anpassen
         function resizeCanvas() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            loadArtwork(); // Nach Größenänderung das Bild neu laden
+            loadArtwork();
         }
         window.addEventListener('resize', resizeCanvas);
         
-        // Zeichen-Konfiguration
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
 
-        // --- Speicher-Funktionen ---
         function saveArtwork() {
             localStorage.setItem('savedArtwork', canvas.toDataURL());
         }
@@ -249,7 +230,6 @@
             localStorage.setItem('undoArtwork', canvas.toDataURL());
         }
 
-        // --- Zeichen-Logik ---
         function getCoordinates(e) {
             if (e.touches && e.touches.length > 0) {
                 return {
@@ -264,7 +244,6 @@
         }
 
         function startPosition(e) {
-            // Ignoriere Multitouch zum Zeichnen (verhindert wilde Striche bei 5-Finger-Tap)
             if (e.touches && e.touches.length > 1) return; 
             
             isDrawing = true;
@@ -275,13 +254,12 @@
             if (isDrawing) {
                 isDrawing = false;
                 ctx.beginPath();
-                saveArtwork(); // Speichern wenn der Finger angehoben wird
+                saveArtwork();
             }
         }
 
         function draw(e) {
             if (!isDrawing) return;
-            // PreventDefault verhindert, dass das Handy scrollt
             e.preventDefault(); 
             
             const pos = getCoordinates(e);
@@ -308,13 +286,9 @@
         canvas.addEventListener('touchstart', startPosition, { passive: false });
         canvas.addEventListener('touchend', endPosition);
         canvas.addEventListener('touchmove', draw, { passive: false });
-
-        // --- Werkzeugleiste Logik ---
         
-        // Vordefinierte Farben
         const colorBtns = document.querySelectorAll('.color-btn');
         colorBtns.forEach(btn => {
-            // Touch und Click unterstützen
             const selectColor = () => {
                 currentColor = btn.getAttribute('data-color');
                 setDrawMode();
@@ -323,21 +297,19 @@
             btn.addEventListener('touchstart', (e) => { e.preventDefault(); selectColor(); });
         });
 
-        // Farbrad (Custom Color)
         const customColorInput = document.getElementById('customColor');
         customColorInput.addEventListener('input', (e) => {
             currentColor = e.target.value;
             setDrawMode();
         });
 
-        // Malen / Radieren umschalten
         const modeBtn = document.getElementById('modeBtn');
         const penIcon = document.getElementById('penIcon');
         const eraserIcon = document.getElementById('eraserIcon');
 
         function setDrawMode() {
             isEraser = false;
-            modeBtn.style.backgroundColor = '#4CAF50'; // Grün
+            modeBtn.style.backgroundColor = '#4CAF50';
             penIcon.style.display = 'block';
             eraserIcon.style.display = 'none';
         }
@@ -345,7 +317,7 @@
         function toggleMode() {
             isEraser = !isEraser;
             if (isEraser) {
-                modeBtn.style.backgroundColor = '#f44336'; // Rot
+                modeBtn.style.backgroundColor = '#f44336';
                 penIcon.style.display = 'none';
                 eraserIcon.style.display = 'block';
             } else {
@@ -356,34 +328,29 @@
         modeBtn.addEventListener('click', toggleMode);
         modeBtn.addEventListener('touchstart', (e) => { e.preventDefault(); toggleMode(); });
 
-        // Mülleimer
         const trashBtn = document.getElementById('trashBtn');
         function clearCanvas() {
-            saveUndoState(); // Speichern, falls es ein Versehen war
+            saveUndoState();
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             saveArtwork();
         }
         trashBtn.addEventListener('click', clearCanvas);
         trashBtn.addEventListener('touchstart', (e) => { e.preventDefault(); clearCanvas(); });
 
-
-        // --- Eltern-Menü (5-Finger-Tap) ---
         const parentMenu = document.getElementById('parentMenu');
 
         window.addEventListener('touchstart', (e) => {
-            // Wenn exakt 5 Finger (oder mehr) auf dem Bildschirm liegen
             if (e.touches.length >= 5) {
                 parentMenu.style.display = 'flex';
             }
         });
 
-        // Eltern-Menü Funktionen
         document.getElementById('closeMenuBtn').addEventListener('click', () => {
             parentMenu.style.display = 'none';
         });
 
         document.getElementById('clearDataBtn').addEventListener('click', () => {
-            if(confirm('Wirklich alle gespeicherten Kunstwerke (Cookies/Speicher) endgültig löschen?')) {
+            if(confirm('Wirklich alle gespeicherten Kunstwerke endgültig löschen?')) {
                 localStorage.removeItem('savedArtwork');
                 localStorage.removeItem('undoArtwork');
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -411,17 +378,27 @@
 
         document.getElementById('printBtn').addEventListener('click', () => {
             parentMenu.style.display = 'none';
-            // Kleines Timeout, damit sich das Menü schließt, bevor gedruckt wird
             setTimeout(() => {
                 window.print();
             }, 500);
         });
 
-        // Init beim ersten Laden
         resizeCanvas();
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
-        
+
+        // Service Worker Registrierung für Offline-Nutzung
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                .then(registration => {
+                    console.log('ServiceWorker registriert.');
+                })
+                .catch(error => {
+                    console.log('ServiceWorker Fehler: ', error);
+                });
+            });
+        }
     </script>
 </body>
 </html>
