@@ -9,6 +9,7 @@
     <link rel="manifest" href="manifest.json">
     <title>Mal-App</title>
     <style>
+        /* Grundlegendes Layout */
         * {
             box-sizing: border-box;
             margin: 0;
@@ -40,10 +41,31 @@
             align-items: center;
             font-size: 32px;
             font-weight: bold;
-            color: #ff4081; /* Ein schönes Pink/Magenta für den Text */
+            color: #ff4081;
             transition: opacity 0.5s ease;
         }
 
+        /* Sperrbildschirm (Lock Screen) */
+        #lockOverlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0,0,0,0.9);
+            z-index: 9000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: white;
+            font-size: 40px;
+            font-weight: bold;
+            text-align: center;
+            padding: 20px;
+        }
+
+        /* Zweigeteilte Werkzeugleiste für besseres Scrollen */
         #toolbar {
             position: absolute;
             top: 0;
@@ -53,10 +75,34 @@
             background-color: #f0f0f0;
             display: flex;
             align-items: center;
-            padding: 0 10px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
             z-index: 10;
+        }
+
+        /* Scrollbarer Bereich für die Farben */
+        #colorScrollArea {
+            display: flex;
+            align-items: center;
+            height: 100%;
+            flex-grow: 1;
             overflow-x: auto;
+            padding: 0 10px;
+            /* Versteckt den Scrollbalken, erlaubt aber Wischen */
+            scrollbar-width: none; 
+        }
+        #colorScrollArea::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Fester Bereich für die Werkzeuge rechts */
+        #toolsArea {
+            display: flex;
+            align-items: center;
+            height: 100%;
+            flex-shrink: 0;
+            padding: 0 10px;
+            border-left: 2px solid #cccccc;
+            background-color: #f0f0f0;
         }
 
         .btn {
@@ -77,13 +123,11 @@
             transform: scale(0.9);
         }
 
-        /* Wenn eine Farbe aktiv ausgewählt ist */
         .active-btn {
             transform: scale(1.15);
             border-color: #333333;
         }
 
-        /* Regenbogen Button Animation */
         @keyframes rainbowSpin {
             0% { background-position: 0% 50%; }
             100% { background-position: 200% 50%; }
@@ -97,11 +141,11 @@
 
         #modeBtn {
             background-color: #4CAF50;
-            margin-left: auto;
         }
 
         #trashBtn {
             background-color: #555555;
+            margin-right: 0; /* Letzter Button braucht kein Margin */
         }
 
         #canvas {
@@ -169,44 +213,56 @@
     <!-- Startbildschirm -->
     <div id="splash">Marco liebt dich</div>
 
-    <div id="toolbar">
-        <!-- Farbauswahl -->
-        <div class="btn color-btn active-btn" style="background-color: #000000;" data-color="#000000"></div>
-        <div class="btn color-btn rainbow-btn" data-color="rainbow"></div>
-        <div class="btn color-btn" style="background-color: #FFC0CB;" data-color="#FFC0CB"></div> <!-- Rosa -->
-        <div class="btn color-btn" style="background-color: #FF69B4;" data-color="#FF69B4"></div> <!-- Pink -->
-        <div class="btn color-btn" style="background-color: #FF00FF;" data-color="#FF00FF"></div> <!-- Magenta -->
-        <div class="btn color-btn" style="background-color: #00E5FF;" data-color="#00E5FF"></div> <!-- Türkis -->
-        <div class="btn color-btn" style="background-color: #8D6E63;" data-color="#8D6E63"></div> <!-- Braun -->
-        <div class="btn color-btn" style="background-color: #FF9800;" data-color="#FF9800"></div> <!-- Orange -->
-        <div class="btn color-btn" style="background-color: #FFEB3B;" data-color="#FFEB3B"></div> <!-- Gelb -->
-        <div class="btn color-btn" style="background-color: #F44336;" data-color="#F44336"></div> <!-- Rot -->
-        <div class="btn color-btn" style="background-color: #4CAF50;" data-color="#4CAF50"></div> <!-- Grün -->
-        <div class="btn color-btn" style="background-color: #2196F3;" data-color="#2196F3"></div> <!-- Blau -->
+    <!-- Sperrbildschirm -->
+    <div id="lockOverlay">
+        <div id="lockReason">Gesperrt</div>
+    </div>
 
-        <!-- Malen / Radieren -->
-        <div class="btn" id="modeBtn">
-            <svg id="penIcon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
-                <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
-                <path d="M2 2l7.586 7.586"></path>
-                <circle cx="11" cy="11" r="2"></circle>
-            </svg>
-            <svg id="eraserIcon" style="display: none;" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M20 20H7L3 16C2.5 15.5 2.5 14.5 3 14L13 4C13.5 3.5 14.5 3.5 15 4L20 9C20.5 9.5 20.5 10.5 20 11L11 20H20V20Z"></path>
-            </svg>
+    <!-- Werkzeugleiste -->
+    <div id="toolbar">
+        <!-- Scrollbarer Bereich für alle Farben -->
+        <div id="colorScrollArea">
+            <div class="btn color-btn active-btn" style="background-color: #000000;" data-color="#000000"></div>
+            <div class="btn color-btn rainbow-btn" data-color="rainbow"></div>
+            <div class="btn color-btn" style="background-color: #FFC0CB;" data-color="#FFC0CB"></div>
+            <div class="btn color-btn" style="background-color: #FF69B4;" data-color="#FF69B4"></div>
+            <div class="btn color-btn" style="background-color: #FF00FF;" data-color="#FF00FF"></div>
+            <div class="btn color-btn" style="background-color: #00E5FF;" data-color="#00E5FF"></div>
+            <div class="btn color-btn" style="background-color: #8D6E63;" data-color="#8D6E63"></div>
+            <div class="btn color-btn" style="background-color: #FF9800;" data-color="#FF9800"></div>
+            <div class="btn color-btn" style="background-color: #FFEB3B;" data-color="#FFEB3B"></div>
+            <div class="btn color-btn" style="background-color: #F44336;" data-color="#F44336"></div>
+            <div class="btn color-btn" style="background-color: #4CAF50;" data-color="#4CAF50"></div>
+            <div class="btn color-btn" style="background-color: #2196F3;" data-color="#2196F3"></div>
+            <!-- Hier werden Gist-Farben dynamisch angehängt -->
+            <div id="dynamicColors"></div>
         </div>
 
-        <!-- Mülleimer -->
-        <div class="btn" id="trashBtn">
-            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
-            </svg>
+        <!-- Fester Bereich für Werkzeuge -->
+        <div id="toolsArea">
+            <div class="btn" id="modeBtn">
+                <svg id="penIcon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+                    <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+                    <path d="M2 2l7.586 7.586"></path>
+                    <circle cx="11" cy="11" r="2"></circle>
+                </svg>
+                <svg id="eraserIcon" style="display: none;" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 20H7L3 16C2.5 15.5 2.5 14.5 3 14L13 4C13.5 3.5 14.5 3.5 15 4L20 9C20.5 9.5 20.5 10.5 20 11L11 20H20V20Z"></path>
+                </svg>
+            </div>
+            <div class="btn" id="trashBtn">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
+                </svg>
+            </div>
         </div>
     </div>
 
+    <!-- Zeichenfläche -->
     <canvas id="canvas"></canvas>
 
+    <!-- Eltern-Menü -->
     <div id="parentMenu">
         <div class="menu-box">
             <h2>Eltern-Optionen</h2>
@@ -218,17 +274,18 @@
     </div>
 
     <script>
-        // Startbildschirm Logik (1 Sekunde anzeigen)
+        // --- 1. Startbildschirm Logik ---
         window.addEventListener('load', () => {
             const splash = document.getElementById('splash');
             setTimeout(() => {
                 splash.style.opacity = '0';
                 setTimeout(() => {
                     splash.style.display = 'none';
-                }, 500); // Wartet auf das Ende der Fade-Out Animation
+                }, 500);
             }, 1000);
         });
 
+        // --- 2. Globale Variablen für Canvas und Zustand ---
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
         
@@ -239,17 +296,152 @@
         let rainbowHue = 0;
         let lastPos = { x: 0, y: 0 };
         const lineWidth = 15;
+        let isLocked = false;
+        let activeTouchId = null; // Für Handballenerkennung (Palm Rejection)
         
+        // Canvas Größe initialisieren
         function resizeCanvas() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
             loadArtwork();
         }
         window.addEventListener('resize', resizeCanvas);
-        
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
 
+        // --- 3. Gist-Fernsteuerung & Offline-Speicher ---
+        // Die Raw-URL ohne Commit-Hash lädt immer die aktuellste Version
+        const gistUrl = 'https://gist.githubusercontent.com/Kleinlauch/305f300ae73a102e623b3148202af353/raw/command.txt';
+        
+        async function fetchGist() {
+            // Nur fetchen, wenn eine Internetverbindung besteht
+            if (!navigator.onLine) return; 
+            
+            try {
+                // Ein Zeitstempel am Ende verhindert den Browser-Cache
+                const response = await fetch(gistUrl + '?t=' + Date.now());
+                if (!response.ok) return;
+                const text = await response.text();
+                processGist(text);
+            } catch (e) {
+                console.log("Fehler beim Abrufen des Gists:", e);
+            }
+        }
+
+        function processGist(text) {
+            const lines = text.split('\n').map(l => l.trim());
+            const lockLine = lines[0] || 'unlock';
+            const cmdLine = lines[1] || '-';
+            const colorsLine = lines[2] || '';
+
+            // Zeile 1: Lock / Unlock
+            const ignoredLock = localStorage.getItem('ignoredLockState');
+            if (lockLine.startsWith('lock')) {
+                // Wenn dieser spezifische Sperr-Befehl bereits lokal per PIN entsperrt wurde, ignoriere ihn
+                if (ignoredLock !== text) {
+                    const reason = lockLine.split(';')[1] || 'Gesperrt';
+                    showLock(reason);
+                }
+            } else {
+                hideLock();
+                localStorage.removeItem('ignoredLockState'); // Reset lokales Entsperren
+            }
+
+            // Zeile 2: Befehle ausführen
+            const lastExecutedCmd = localStorage.getItem('lastExecutedCmd');
+            if (cmdLine !== '-' && cmdLine !== lastExecutedCmd) {
+                executeCommand(cmdLine);
+                // Speichere, dass dieser Befehl ausgeführt wurde, um Wiederholungen zu vermeiden
+                localStorage.setItem('lastExecutedCmd', cmdLine);
+            } else if (cmdLine === '-') {
+                // Wenn das Gist auf '-' zurückgesetzt wurde, mach die Funktion bereit für neue Befehle
+                localStorage.setItem('lastExecutedCmd', '-');
+            }
+
+            // Zeile 3: Zusätzliche Farben
+            const savedExtraColors = localStorage.getItem('savedExtraColors');
+            if (colorsLine !== savedExtraColors) {
+                localStorage.setItem('savedExtraColors', colorsLine);
+                renderExtraColors(colorsLine);
+            }
+
+            // Speichere den kompletten Zustand für Offline-Starts
+            localStorage.setItem('lastGistContent', text);
+        }
+
+        function executeCommand(cmd) {
+            switch(cmd) {
+                case 'menu': 
+                    document.getElementById('parentMenu').style.display = 'flex'; 
+                    break;
+                case 'delete': 
+                    clearCanvas(); 
+                    break;
+                case 'undo-delete': 
+                    undoCanvas(); 
+                    break;
+                case 'print': 
+                    window.print(); 
+                    break;
+            }
+        }
+
+        // Starte das Gist-Polling (alle 10 Sekunden)
+        setInterval(fetchGist, 10000);
+        
+        // Beim Start einmal aus dem lokalen Speicher laden (Offline-Backup), dann online fetchen
+        const offlineGistContent = localStorage.getItem('lastGistContent');
+        if (offlineGistContent) {
+            processGist(offlineGistContent);
+        }
+        fetchGist();
+
+        // --- 4. Sperrbildschirm Funktionen ---
+        const lockOverlay = document.getElementById('lockOverlay');
+        const lockReasonText = document.getElementById('lockReason');
+
+        function showLock(reason) {
+            isLocked = true;
+            lockReasonText.innerText = reason;
+            lockOverlay.style.display = 'flex';
+        }
+
+        function hideLock() {
+            isLocked = false;
+            lockOverlay.style.display = 'none';
+        }
+
+        // --- 5. Dynamische Farben rendern ---
+        function renderExtraColors(hexString) {
+            const container = document.getElementById('dynamicColors');
+            container.innerHTML = ''; // Alte dynamische Farben löschen
+            container.style.display = 'flex';
+
+            if (!hexString || hexString === '-') return;
+
+            const colors = hexString.split(';');
+            colors.forEach(color => {
+                if (color.startsWith('#')) {
+                    const btn = document.createElement('div');
+                    btn.className = 'btn color-btn dynamic-color';
+                    btn.style.backgroundColor = color;
+                    btn.setAttribute('data-color', color);
+                    container.appendChild(btn);
+
+                    // Event Listener für die neu erstellten Buttons hinzufügen
+                    const selectColor = () => {
+                        updateActiveButton(btn);
+                        isRainbow = false;
+                        currentColor = color;
+                        setDrawMode();
+                    };
+                    btn.addEventListener('click', selectColor);
+                    btn.addEventListener('touchstart', (e) => { e.preventDefault(); selectColor(); });
+                }
+            });
+        }
+
+        // --- 6. Lokaler Speicher für Kunstwerke ---
         function saveArtwork() {
             localStorage.setItem('savedArtwork', canvas.toDataURL());
         }
@@ -269,29 +461,47 @@
             localStorage.setItem('undoArtwork', canvas.toDataURL());
         }
 
-        function getCoordinates(e) {
-            if (e.touches && e.touches.length > 0) {
-                return {
-                    x: e.touches[0].clientX,
-                    y: e.touches[0].clientY
-                };
-            }
-            return {
-                x: e.clientX,
-                y: e.clientY
-            };
+        function clearCanvas() {
+            saveUndoState();
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            saveArtwork();
         }
 
+        function undoCanvas() {
+            const undoData = localStorage.getItem('undoArtwork');
+            if (undoData) {
+                const img = new Image();
+                img.onload = () => {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0);
+                    saveArtwork();
+                };
+                img.src = undoData;
+                alert('Löschen rückgängig gemacht.');
+            }
+        }
+
+        // --- 7. Zeichen-Logik & Handballenerkennung (Palm Rejection) ---
         function startPosition(e) {
-            if (e.touches && e.touches.length > 1) return; 
+            if (isLocked) return;
             
-            isDrawing = true;
-            lastPos = getCoordinates(e);
+            if (e.type === 'touchstart') {
+                // PALM REJECTION: Wenn mehrere Finger auf dem Display liegen (z.B. flache Hand),
+                // nehmen wir immer den Finger als Zeichenstift, der als letztes aufgesetzt wurde.
+                // So kann die Hand ruhen und der zweite Finger malt.
+                const touch = e.changedTouches[e.changedTouches.length - 1];
+                activeTouchId = touch.identifier;
+                lastPos = { x: touch.clientX, y: touch.clientY };
+                isDrawing = true;
+            } else {
+                lastPos = { x: e.clientX, y: e.clientY };
+                isDrawing = true;
+            }
             
             ctx.beginPath();
             ctx.moveTo(lastPos.x, lastPos.y);
             
-            // Einen einzelnen Punkt zeichnen, falls nur getippt wird
+            // Einzelnen Punkt beim ersten Tippen zeichnen
             ctx.lineWidth = lineWidth;
             if (isEraser) {
                 ctx.globalCompositeOperation = 'destination-out';
@@ -315,10 +525,18 @@
         }
 
         function draw(e) {
-            if (!isDrawing) return;
+            if (!isDrawing || isLocked) return;
             e.preventDefault(); 
             
-            const pos = getCoordinates(e);
+            let pos;
+            if (e.type === 'touchmove') {
+                // Suche genau den Finger, der als Zeichenstift identifiziert wurde
+                const touch = Array.from(e.touches).find(t => t.identifier === activeTouchId);
+                if (!touch) return; // Die aufliegende ruhende Hand wird ignoriert
+                pos = { x: touch.clientX, y: touch.clientY };
+            } else {
+                pos = { x: e.clientX, y: e.clientY };
+            }
 
             ctx.lineWidth = lineWidth;
             
@@ -329,10 +547,10 @@
                 ctx.stroke();
             } else if (isRainbow) {
                 ctx.globalCompositeOperation = 'source-over';
-                rainbowHue = (rainbowHue + 4) % 360; // Farbe langsam ändern
+                rainbowHue = (rainbowHue + 4) % 360; 
                 ctx.strokeStyle = `hsl(${rainbowHue}, 100%, 50%)`;
                 
-                // Für den Farbwechsel muss der Pfad neu begonnen werden
+                // Für flüssige Farbverläufe
                 ctx.beginPath();
                 ctx.moveTo(lastPos.x, lastPos.y);
                 ctx.lineTo(pos.x, pos.y);
@@ -340,7 +558,6 @@
             } else {
                 ctx.globalCompositeOperation = 'source-over';
                 ctx.strokeStyle = currentColor;
-                // Bei normalen Farben führen wir den Pfad fort für glatte Linien (kein Abhacken)
                 ctx.lineTo(pos.x, pos.y);
                 ctx.stroke();
             }
@@ -356,13 +573,15 @@
         canvas.addEventListener('touchend', endPosition);
         canvas.addEventListener('touchmove', draw, { passive: false });
         
-        // Farben und Markierung wechseln
-        const colorBtns = document.querySelectorAll('.color-btn');
+        // --- 8. UI Interaktionen (Werkzeugleiste) ---
         function updateActiveButton(clickedBtn) {
-            colorBtns.forEach(b => b.classList.remove('active-btn'));
+            const allColors = document.querySelectorAll('.color-btn');
+            allColors.forEach(b => b.classList.remove('active-btn'));
             clickedBtn.classList.add('active-btn');
         }
 
+        // Standard-Farben initialisieren
+        const colorBtns = document.querySelectorAll('.color-btn:not(.dynamic-color)');
         colorBtns.forEach(btn => {
             const selectColor = () => {
                 updateActiveButton(btn);
@@ -396,12 +615,11 @@
                 modeBtn.style.backgroundColor = '#f44336';
                 penIcon.style.display = 'none';
                 eraserIcon.style.display = 'block';
-                // Markierung bei den Farben entfernen, da radiert wird
-                colorBtns.forEach(b => b.classList.remove('active-btn'));
+                document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active-btn'));
             } else {
                 setDrawMode();
-                // Die zuletzt genutzte Farbe wieder markieren
-                const activeBtn = Array.from(colorBtns).find(b => 
+                const allColorBtns = document.querySelectorAll('.color-btn');
+                const activeBtn = Array.from(allColorBtns).find(b => 
                     (isRainbow && b.getAttribute('data-color') === 'rainbow') || 
                     (!isRainbow && b.getAttribute('data-color') === currentColor)
                 );
@@ -412,17 +630,11 @@
         modeBtn.addEventListener('click', toggleMode);
         modeBtn.addEventListener('touchstart', (e) => { e.preventDefault(); toggleMode(); });
 
-        const trashBtn = document.getElementById('trashBtn');
-        function clearCanvas() {
-            saveUndoState();
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            saveArtwork();
-        }
-        trashBtn.addEventListener('click', clearCanvas);
-        trashBtn.addEventListener('touchstart', (e) => { e.preventDefault(); clearCanvas(); });
+        document.getElementById('trashBtn').addEventListener('click', clearCanvas);
+        document.getElementById('trashBtn').addEventListener('touchstart', (e) => { e.preventDefault(); clearCanvas(); });
 
 
-        // --- Eltern-Menü mit 2 Sekunden Verzögerung ---
+        // --- 9. Fünf-Finger Timer für Menü und Notfall-Entsperrung ---
         const parentMenu = document.getElementById('parentMenu');
         let parentMenuTimer = null;
         let fiveFingersDown = false;
@@ -430,19 +642,32 @@
         window.addEventListener('touchstart', (e) => {
             if (e.touches.length >= 5) {
                 fiveFingersDown = true;
-                clearTimeout(parentMenuTimer); // Timer sicherheitshalber zurücksetzen
+                clearTimeout(parentMenuTimer); 
                 
-                // Startet den 2-Sekunden Timer
-                parentMenuTimer = setTimeout(() => {
-                    if (fiveFingersDown) {
-                        parentMenu.style.display = 'flex';
-                    }
-                }, 2000); 
+                if (isLocked) {
+                    // Befindet sich das Gerät im Lock-Modus, läuft ein 3-Sekunden Timer für die PIN-Eingabe
+                    parentMenuTimer = setTimeout(() => {
+                        if (fiveFingersDown) {
+                            const pin = prompt('Notfall-Entsperrung (PIN eingeben):');
+                            if (pin === '1104') {
+                                // Gist-Inhalt speichern, damit dieser exakte Sperrbefehl bis zur nächsten Änderung ignoriert wird
+                                localStorage.setItem('ignoredLockState', localStorage.getItem('lastGistContent'));
+                                hideLock();
+                            }
+                        }
+                    }, 3000);
+                } else {
+                    // Befindet sich das Gerät im normalen Modus, öffnet sich nach 2 Sekunden das Menü
+                    parentMenuTimer = setTimeout(() => {
+                        if (fiveFingersDown) {
+                            parentMenu.style.display = 'flex';
+                        }
+                    }, 2000); 
+                }
             }
         });
 
         window.addEventListener('touchend', (e) => {
-            // Sobald nicht mehr 5 Finger aufliegen, Timer stoppen
             if (e.touches.length < 5) {
                 fiveFingersDown = false;
                 clearTimeout(parentMenuTimer);
@@ -454,8 +679,7 @@
             clearTimeout(parentMenuTimer);
         });
 
-
-        // Eltern-Menü Buttons
+        // --- 10. Eltern-Menü Buttons ---
         document.getElementById('closeMenuBtn').addEventListener('click', () => {
             parentMenu.style.display = 'none';
         });
@@ -471,35 +695,19 @@
         });
 
         document.getElementById('undoTrashBtn').addEventListener('click', () => {
-            const undoData = localStorage.getItem('undoArtwork');
-            if (undoData) {
-                const img = new Image();
-                img.onload = () => {
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    ctx.drawImage(img, 0, 0);
-                    saveArtwork();
-                };
-                img.src = undoData;
-                alert('Letztes Löschen wurde rückgängig gemacht.');
-            } else {
-                alert('Es gibt nichts, was rückgängig gemacht werden kann.');
-            }
+            undoCanvas();
             parentMenu.style.display = 'none';
         });
 
         document.getElementById('printBtn').addEventListener('click', () => {
             parentMenu.style.display = 'none';
-            setTimeout(() => {
-                window.print();
-            }, 500);
+            setTimeout(() => { window.print(); }, 500);
         });
 
-        // Start
+        // Init
         resizeCanvas();
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-
-        // Service Worker für Offline
+        
+        // Service Worker für den vollständigen Offline-Support
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js').catch(err => console.log('SW Error:', err));
