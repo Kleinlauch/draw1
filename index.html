@@ -5,267 +5,313 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#f0f0f0">
+    <meta name="theme-color" content="#ffffff">
     <link rel="manifest" href="manifest.json">
     <title>Mal-App</title>
     <style>
         /* Grundlegendes Layout & Fullscreen Setup */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            user-select: none;
-            -webkit-user-select: none;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+        body { width: 100vw; height: 100vh; overflow: hidden; background-color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; touch-action: none; }
 
-        body {
-            width: 100vw;
-            height: 100vh;
-            overflow: hidden;
-            background-color: #ffffff;
-            font-family: sans-serif;
-            touch-action: none;
-        }
+        /* Sperrung Standard-Browser-Menüs */
+        img, canvas { -webkit-touch-callout: none; }
 
-        /* Startbildschirm (Splash Screen) */
-        #splash {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background-color: #ffffff;
-            z-index: 9999;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 32px;
-            font-weight: bold;
-            color: #ff4081;
-            transition: opacity 0.5s ease;
-        }
+        /* Startbildschirm */
+        #splash { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #ffffff; z-index: 9999; display: flex; justify-content: center; align-items: center; font-size: 32px; font-weight: bold; color: #ff4081; transition: opacity 0.5s ease; }
 
-        /* Sperrbildschirm (Lock Screen) */
-        #lockOverlay {
-            display: none; /* Standardmäßig versteckt */
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background-color: rgba(0,0,0,0.9);
-            z-index: 9000;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            color: white;
-            font-size: 40px;
-            font-weight: bold;
-            text-align: center;
-            padding: 20px;
-        }
+        /* Vollbild-Overlays (Gist-Lock, Bedtime, Offline) */
+        .fullscreen-lock { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(20,20,20,0.95); z-index: 9000; justify-content: center; align-items: center; flex-direction: column; color: white; text-align: center; padding: 20px; backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); }
+        .lock-icon { font-size: 80px; margin-bottom: 20px; }
+        .lock-text { font-size: 32px; font-weight: bold; }
+        .lock-subtext { font-size: 20px; color: #aaa; margin-top: 10px; }
+        
+        /* Eltern Bypass Button während Schlafenszeit */
+        #bedtimeBypassBtn { position: absolute; top: 20px; right: 20px; padding: 10px 20px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; color: white; font-weight: bold; z-index: 9001; }
 
-        /* Werkzeugleiste - Komplett durchscrollbar */
-        #toolbar {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 80px;
-            background-color: #f0f0f0;
-            display: flex;
-            align-items: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            z-index: 10;
-            overflow-x: auto;
-            padding: 0 10px;
-            scrollbar-width: none; /* Firefox Scrollbar verstecken */
-        }
-        #toolbar::-webkit-scrollbar {
-            display: none; /* Chrome/Safari Scrollbar verstecken */
-        }
+        /* Werkzeugleiste */
+        #toolbar { position: absolute; top: 0; left: 0; width: 100%; height: 80px; background-color: rgba(240, 240, 240, 0.95); backdrop-filter: blur(10px); display: flex; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); z-index: 10; padding: 0; }
+        
+        /* Scrollbereich für Farben (Handy-freundlich) */
+        #colorScrollArea { display: flex; align-items: center; height: 100%; flex-grow: 1; overflow-x: auto; overflow-y: hidden; padding: 0 10px; scrollbar-width: none; touch-action: pan-x; }
+        #colorScrollArea::-webkit-scrollbar { display: none; }
+        
+        /* Fester Bereich für Werkzeuge rechts */
+        #toolsArea { display: flex; align-items: center; height: 100%; flex-shrink: 0; padding: 0 10px; border-left: 2px solid #ccc; background-color: rgba(240, 240, 240, 0.95); }
 
-        /* Standard Buttons */
-        .btn {
-            width: 55px;
-            height: 55px;
-            border-radius: 50%;
-            border: 4px solid #ffffff;
-            margin-right: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-            flex-shrink: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            transition: transform 0.2s, border-color 0.2s;
-        }
+        .btn { width: 50px; height: 50px; border-radius: 50%; border: 4px solid #ffffff; margin-right: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); flex-shrink: 0; display: flex; justify-content: center; align-items: center; transition: transform 0.2s, border-color 0.2s; cursor: pointer; }
+        .btn:active { transform: scale(0.9); }
+        .active-btn { transform: scale(1.15); border-color: #333333; }
 
-        .btn:active {
-            transform: scale(0.9);
-        }
+        /* Regenbogen */
+        @keyframes rainbowSpin { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
+        .rainbow-btn { background: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3, #ff0000); background-size: 200% 100%; animation: rainbowSpin 2s linear infinite; }
 
-        .active-btn {
-            transform: scale(1.15);
-            border-color: #333333;
-        }
-
-        /* Regenbogen Animation */
-        @keyframes rainbowSpin {
-            0% { background-position: 0% 50%; }
-            100% { background-position: 200% 50%; }
-        }
-        .rainbow-btn {
-            background: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3, #ff0000);
-            background-size: 200% 100%;
-            animation: rainbowSpin 2s linear infinite;
-        }
-
-        /* Werkzeuge */
+        /* Spezifische Buttons */
         #modeBtn { background-color: #4CAF50; }
-        #trashBtn { background-color: #555555; }
+        #trashBtn { background-color: #555555; margin-right: 15px;}
+        .undo-redo-btn { background-color: #2196F3; }
 
-        /* Zeichenfläche */
-        #canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 1;
-        }
+        #canvas { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; background-color: white; }
 
-        /* Verstecktes Elternmenü */
-        #parentMenu {
-            display: none;
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background-color: rgba(0,0,0,0.8);
-            z-index: 100;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-        }
+        /* Apple Like Liquid Glass Menüs */
+        .glass-menu { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); z-index: 9500; justify-content: center; align-items: center; flex-direction: column; opacity: 0; transition: opacity 0.3s; }
+        .glass-menu.show { opacity: 1; }
+        .menu-box { background: rgba(30, 30, 30, 0.75); border: 1px solid rgba(255,255,255,0.15); padding: 30px; border-radius: 24px; text-align: center; width: 90%; max-width: 400px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); color: white; display: flex; flex-direction: column; gap: 10px; max-height: 90vh; overflow-y: auto; }
+        .menu-box h2 { margin-bottom: 15px; font-weight: 600; }
+        .menu-box p { margin-bottom: 20px; font-size: 14px; color: #ccc; }
+        
+        .menu-btn { width: 100%; padding: 14px; font-size: 16px; border: none; border-radius: 12px; background-color: rgba(255,255,255,0.1); color: white; font-weight: 500; transition: background 0.2s; cursor: pointer; border: 1px solid rgba(255,255,255,0.05); }
+        .menu-btn:active { background-color: rgba(255,255,255,0.2); }
+        .menu-btn.red { background-color: rgba(244, 67, 54, 0.4); border-color: rgba(244, 67, 54, 0.6); }
+        .menu-btn.blue { background-color: rgba(33, 150, 243, 0.4); border-color: rgba(33, 150, 243, 0.6); }
+        .menu-btn:disabled { opacity: 0.5; pointer-events: none; }
 
-        .menu-box {
-            background: white;
-            padding: 30px;
-            border-radius: 20px;
-            text-align: center;
-            max-width: 90%;
-        }
+        /* Liquid Glass Custom Popups (Eingabefelder) */
+        .glass-input { width: 100%; padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.3); color: white; font-size: 18px; text-align: center; margin-bottom: 15px; outline: none; user-select: auto; -webkit-user-select: auto; }
+        .glass-input:focus { border-color: #2196F3; }
+        
+        .row { display: flex; gap: 10px; }
+        .row > * { flex: 1; }
 
-        .menu-box h2 {
-            margin-bottom: 20px;
-            color: #333;
-        }
+        /* Log Bereich */
+        #logArea { background: rgba(0,0,0,0.5); padding: 10px; border-radius: 12px; font-family: monospace; font-size: 11px; text-align: left; height: 150px; overflow-y: auto; color: #00ff00; margin-bottom: 10px; }
+        #logArea div { margin-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 2px;}
 
-        .menu-btn {
-            display: block;
-            width: 100%;
-            padding: 15px;
-            margin-bottom: 15px;
-            font-size: 18px;
-            border: none;
-            border-radius: 10px;
-            background-color: #2196F3;
-            color: white;
-            font-weight: bold;
-        }
-
-        .menu-btn.close {
-            background-color: #f44336;
-        }
-
-        svg {
-            width: 30px;
-            height: 30px;
-            stroke: white;
-        }
+        svg { width: 26px; height: 26px; stroke: white; }
     </style>
 </head>
-<body>
+<body oncontextmenu="return false;"> <!-- Rechtsklick gesperrt -->
 
-    <!-- Startbildschirm -->
     <div id="splash">Marco liebt dich</div>
 
-    <!-- Sperrbildschirm -->
-    <div id="lockOverlay">
-        <div id="lockReason">Gesperrt</div>
+    <!-- Locks -->
+    <div id="lockOverlay" class="fullscreen-lock">
+        <div class="lock-icon">🔒</div>
+        <div id="lockReason" class="lock-text">Gesperrt</div>
     </div>
 
-    <!-- Scrollbare Werkzeugleiste -->
+    <div id="bedtimeOverlay" class="fullscreen-lock">
+        <div id="bedtimeBypassBtn">ELTERN</div>
+        <div class="lock-icon">🌙</div>
+        <div class="lock-text">Schlafenszeit</div>
+        <div id="bedtimeText" class="lock-subtext"></div>
+    </div>
+
+    <div id="offlineOverlay" class="fullscreen-lock">
+        <div class="lock-icon" style="color: #F44336;">⚠️</div>
+        <div class="lock-text" style="color: #F44336;">OFFLINE</div>
+        <div class="lock-subtext">Internetverbindung benötigt.</div>
+    </div>
+
+    <!-- Toolbar -->
     <div id="toolbar">
-        <div class="btn color-btn active-btn" style="background-color: #000000;" data-color="#000000"></div>
-        <div class="btn color-btn rainbow-btn" data-color="rainbow"></div>
-        <div class="btn color-btn" style="background-color: #FFC0CB;" data-color="#FFC0CB"></div>
-        <div class="btn color-btn" style="background-color: #FF69B4;" data-color="#FF69B4"></div>
-        <div class="btn color-btn" style="background-color: #FF00FF;" data-color="#FF00FF"></div>
-        <div class="btn color-btn" style="background-color: #00E5FF;" data-color="#00E5FF"></div>
-        <div class="btn color-btn" style="background-color: #8D6E63;" data-color="#8D6E63"></div>
-        <div class="btn color-btn" style="background-color: #FF9800;" data-color="#FF9800"></div>
-        <div class="btn color-btn" style="background-color: #FFEB3B;" data-color="#FFEB3B"></div>
-        <div class="btn color-btn" style="background-color: #F44336;" data-color="#F44336"></div>
-        <div class="btn color-btn" style="background-color: #4CAF50;" data-color="#4CAF50"></div>
-        <div class="btn color-btn" style="background-color: #2196F3;" data-color="#2196F3"></div>
-        
-        <!-- Hier werden Gist-Farben eingefügt -->
-        <div id="dynamicColors" style="display:flex;"></div>
-
-        <!-- Trennlinie zu den Werkzeugen -->
-        <div style="width: 2px; height: 40px; background: #ccc; margin: 0 10px; flex-shrink: 0;"></div>
-
-        <div class="btn" id="modeBtn">
-            <svg id="penIcon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
-                <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
-                <path d="M2 2l7.586 7.586"></path>
-                <circle cx="11" cy="11" r="2"></circle>
-            </svg>
-            <svg id="eraserIcon" style="display: none;" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M20 20H7L3 16C2.5 15.5 2.5 14.5 3 14L13 4C13.5 3.5 14.5 3.5 15 4L20 9C20.5 9.5 20.5 10.5 20 11L11 20H20V20Z"></path>
-            </svg>
+        <div id="colorScrollArea">
+            <div class="btn color-btn active-btn" style="background-color: #000000;" data-color="#000000"></div>
+            <div class="btn color-btn rainbow-btn" data-color="rainbow"></div>
+            <div class="btn color-btn" style="background-color: #FFC0CB;" data-color="#FFC0CB"></div>
+            <div class="btn color-btn" style="background-color: #FF69B4;" data-color="#FF69B4"></div>
+            <div class="btn color-btn" style="background-color: #FF00FF;" data-color="#FF00FF"></div>
+            <div class="btn color-btn" style="background-color: #00E5FF;" data-color="#00E5FF"></div>
+            <div class="btn color-btn" style="background-color: #8D6E63;" data-color="#8D6E63"></div>
+            <div class="btn color-btn" style="background-color: #FF9800;" data-color="#FF9800"></div>
+            <div class="btn color-btn" style="background-color: #FFEB3B;" data-color="#FFEB3B"></div>
+            <div class="btn color-btn" style="background-color: #F44336;" data-color="#F44336"></div>
+            <div class="btn color-btn" style="background-color: #4CAF50;" data-color="#4CAF50"></div>
+            <div class="btn color-btn" style="background-color: #2196F3;" data-color="#2196F3"></div>
+            <div id="dynamicColors" style="display:flex;"></div>
         </div>
-        <div class="btn" id="trashBtn" style="margin-right: 20px;">
-            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
-            </svg>
+
+        <div id="toolsArea">
+            <div class="btn undo-redo-btn" id="undoBtn">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10h10a5 5 0 0 1 5 5v0a5 5 0 0 1-5 5H9"/><polyline points="3 10 7 14 7 6"/></svg>
+            </div>
+            <div class="btn undo-redo-btn" id="redoBtn">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10H11a5 5 0 0 0-5 5v0a5 5 0 0 0 5 5h4"/><polyline points="21 10 17 14 17 6"/></svg>
+            </div>
+            <div class="btn" id="modeBtn">
+                <svg id="penIcon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"></path><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path><path d="M2 2l7.586 7.586"></path><circle cx="11" cy="11" r="2"></circle></svg>
+                <svg id="eraserIcon" style="display: none;" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20H7L3 16C2.5 15.5 2.5 14.5 3 14L13 4C13.5 3.5 14.5 3.5 15 4L20 9C20.5 9.5 20.5 10.5 20 11L11 20H20V20Z"></path></svg>
+            </div>
+            <div class="btn" id="trashBtn">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path></svg>
+            </div>
         </div>
     </div>
 
-    <!-- Zeichenfläche -->
     <canvas id="canvas"></canvas>
 
-    <!-- Eltern-Menü -->
-    <div id="parentMenu">
+    <!-- UI Menüs -->
+    <div id="parentMenu" class="glass-menu">
         <div class="menu-box">
             <h2>Eltern-Optionen</h2>
-            <button class="menu-btn" id="undoTrashBtn">Löschen rückgängig machen</button>
-            <button class="menu-btn" id="clearDataBtn">Speicher leeren</button>
-            <button class="menu-btn" id="printBtn">Kunstwerk drucken</button>
-            <button class="menu-btn close" id="closeMenuBtn">Menü schließen</button>
+            <button class="menu-btn" id="pmBtnBedtime">Schlafenszeit einstellen</button>
+            <button class="menu-btn" id="pmBtnPrint">Kunstwerk drucken</button>
+            <button class="menu-btn red" id="pmBtnAdmin">ADMIN Bereich</button>
+            <button class="menu-btn blue" id="pmBtnClose">Schließen</button>
+        </div>
+    </div>
+
+    <div id="adminMenu" class="glass-menu">
+        <div class="menu-box">
+            <h2>ADMIN</h2>
+            <div id="logArea"></div>
+            <button class="menu-btn red" id="amBtnClearData">Speicher (Cookies) leeren</button>
+            <button class="menu-btn" id="amBtnToggleBedtime">Schlafenszeit löschen</button>
+            <button class="menu-btn" id="amBtnParentPin">Eltern-PIN verwalten</button>
+            <button class="menu-btn" id="amBtnOfflineMode">Offline-Modus umschalten</button>
+            <button class="menu-btn blue" id="amBtnClose">Schließen</button>
+        </div>
+    </div>
+
+    <!-- Custom Popups -->
+    <div id="customPrompt" class="glass-menu">
+        <div class="menu-box">
+            <h2 id="cpTitle">Eingabe</h2>
+            <input type="password" id="cpInput" class="glass-input" pattern="[0-9]*" inputmode="numeric">
+            <div class="row">
+                <button class="menu-btn red" id="cpCancel">Abbrechen</button>
+                <button class="menu-btn blue" id="cpOk">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="customConfirm" class="glass-menu">
+        <div class="menu-box">
+            <h2 id="ccTitle">Bestätigen</h2>
+            <p id="ccMessage"></p>
+            <div class="row">
+                <button class="menu-btn red" id="ccCancel">Abbrechen</button>
+                <button class="menu-btn blue" id="ccOk">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="customAlert" class="glass-menu">
+        <div class="menu-box">
+            <h2 id="caTitle">Hinweis</h2>
+            <p id="caMessage"></p>
+            <button class="menu-btn blue" id="caOk">OK</button>
+        </div>
+    </div>
+    
+    <div id="customTimePrompt" class="glass-menu">
+        <div class="menu-box">
+            <h2>Schlafenszeit (Von - Bis)</h2>
+            <div class="row">
+                <input type="time" id="ctStart" class="glass-input">
+                <input type="time" id="ctEnd" class="glass-input">
+            </div>
+            <div class="row">
+                <button class="menu-btn red" id="ctCancel">Abbrechen</button>
+                <button class="menu-btn blue" id="ctOk">Speichern</button>
+            </div>
         </div>
     </div>
 
     <script>
-        // --- 1. Startbildschirm & Geräteerkennung ---
+        // --- System Logger ---
+        function appLog(msg) {
+            let logs = JSON.parse(localStorage.getItem('appLogs') || '[]');
+            const time = new Date().toLocaleTimeString('de-DE');
+            logs.unshift(`[${time}] ${msg}`);
+            if (logs.length > 50) logs.pop();
+            localStorage.setItem('appLogs', JSON.stringify(logs));
+            renderLogs();
+        }
+        function renderLogs() {
+            const logArea = document.getElementById('logArea');
+            if(!logArea) return;
+            const logs = JSON.parse(localStorage.getItem('appLogs') || '[]');
+            logArea.innerHTML = logs.map(l => `<div>${l}</div>`).join('');
+        }
+
+        // --- Custom UI Promises (Liquid Glass) ---
+        function showAlert(title, message) {
+            return new Promise(resolve => {
+                const modal = document.getElementById('customAlert');
+                document.getElementById('caTitle').innerText = title;
+                document.getElementById('caMessage').innerText = message;
+                modal.style.display = 'flex';
+                setTimeout(() => modal.classList.add('show'), 10);
+                
+                document.getElementById('caOk').onclick = () => {
+                    modal.classList.remove('show');
+                    setTimeout(() => { modal.style.display = 'none'; resolve(); }, 300);
+                };
+            });
+        }
+
+        function showConfirm(title, message) {
+            return new Promise(resolve => {
+                const modal = document.getElementById('customConfirm');
+                document.getElementById('ccTitle').innerText = title;
+                document.getElementById('ccMessage').innerText = message;
+                modal.style.display = 'flex';
+                setTimeout(() => modal.classList.add('show'), 10);
+                
+                document.getElementById('ccOk').onclick = () => { close(true); };
+                document.getElementById('ccCancel').onclick = () => { close(false); };
+                
+                function close(res) {
+                    modal.classList.remove('show');
+                    setTimeout(() => { modal.style.display = 'none'; resolve(res); }, 300);
+                }
+            });
+        }
+
+        function showPrompt(title, type = "password") {
+            return new Promise(resolve => {
+                const modal = document.getElementById('customPrompt');
+                const input = document.getElementById('cpInput');
+                document.getElementById('cpTitle').innerText = title;
+                input.type = type;
+                input.value = '';
+                modal.style.display = 'flex';
+                setTimeout(() => { modal.classList.add('show'); input.focus(); }, 10);
+                
+                document.getElementById('cpOk').onclick = () => { close(input.value); };
+                document.getElementById('cpCancel').onclick = () => { close(null); };
+                
+                function close(res) {
+                    modal.classList.remove('show');
+                    setTimeout(() => { modal.style.display = 'none'; resolve(res); }, 300);
+                }
+            });
+        }
+        
+        function showTimePrompt() {
+            return new Promise(resolve => {
+                const modal = document.getElementById('customTimePrompt');
+                modal.style.display = 'flex';
+                setTimeout(() => modal.classList.add('show'), 10);
+                
+                document.getElementById('ctOk').onclick = () => { 
+                    close({ start: document.getElementById('ctStart').value, end: document.getElementById('ctEnd').value }); 
+                };
+                document.getElementById('ctCancel').onclick = () => { close(null); };
+                
+                function close(res) {
+                    modal.classList.remove('show');
+                    setTimeout(() => { modal.style.display = 'none'; resolve(res); }, 300);
+                }
+            });
+        }
+
+        // --- Startbildschirm ---
         window.addEventListener('load', () => {
             const splash = document.getElementById('splash');
-            const isMobile = window.innerWidth <= 768 || /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            
-            if (isMobile) {
-                splash.style.display = 'none'; // Auf Handys direkt verstecken
-            } else {
+            const isMobile = window.innerWidth <= 768 || /Android|webOS|iPhone|iPod|BlackBerry/i.test(navigator.userAgent);
+            if (isMobile) splash.style.display = 'none';
+            else {
                 setTimeout(() => {
                     splash.style.opacity = '0';
                     setTimeout(() => { splash.style.display = 'none'; }, 500);
                 }, 1000);
             }
+            appLog("App gestartet");
         });
 
-        // --- 2. Canvas Setup ---
+        // --- Canvas & Zeichnen (inkl. Undo/Redo & Fixes) ---
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
         
@@ -274,188 +320,80 @@
         let currentColor = '#000000';
         let rainbowHue = 0;
         const lineWidth = 15;
-        let isLocked = false;
+        let isAppLocked = false; 
         
-        // Multi-Touch Tracking für flüssiges Zeichnen und "Hand abmalen"
         const ongoingTouches = {};
         
+        // Undo / Redo Historie
+        let history = [];
+        let historyStep = -1;
+
+        function saveStateToHistory() {
+            historyStep++;
+            history.length = historyStep; // Schneidet Redos ab, wenn neu gezeichnet wird
+            history.push(canvas.toDataURL());
+            if (history.length > 25) { history.shift(); historyStep--; } // Max 25 Schritte
+            localStorage.setItem('savedArtwork', history[historyStep]);
+        }
+
+        function restoreHistoryState() {
+            if(historyStep < 0) {
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                return;
+            }
+            const img = new Image();
+            img.onload = () => { 
+                ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0); 
+            };
+            img.src = history[historyStep];
+            localStorage.setItem('savedArtwork', history[historyStep]);
+        }
+        
+        document.getElementById('undoBtn').addEventListener('click', () => {
+            if(historyStep > 0) { historyStep--; restoreHistoryState(); }
+            else if(historyStep === 0) { historyStep = -1; restoreHistoryState(); }
+        });
+        document.getElementById('redoBtn').addEventListener('click', () => {
+            if(historyStep < history.length - 1) { historyStep++; restoreHistoryState(); }
+        });
+
         function resizeCanvas() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            loadArtwork();
-        }
-        window.addEventListener('resize', resizeCanvas);
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-
-        // --- 3. Gist-Fernsteuerung & Offline-Speicher ---
-        const gistUrl = 'https://gist.githubusercontent.com/Kleinlauch/305f300ae73a102e623b3148202af353/raw/command.txt';
-        
-        async function fetchGist() {
-            if (!navigator.onLine) return; // Ohne Internet nichts tun
+            // Nach Resize muss Kontext neu gesetzt werden
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            try {
-                // Wir zwingen den Browser, Cache zu ignorieren
-                const response = await fetch(gistUrl + '?cb=' + new Date().getTime(), { cache: 'no-store' });
-                if (!response.ok) return;
-                const text = await response.text();
-                processGist(text);
-            } catch (e) {
-                console.log("Fehler beim Abrufen:", e);
-            }
-        }
-
-        function processGist(text) {
-            // Extrem robustes Trennen von Zeilen (egal ob Windows oder Linux Umbrüche)
-            const lines = text.split(/\r?\n/).map(l => l.trim());
-            const lockLine = lines[0] || 'unlock';
-            const cmdLine = lines[1] || '-';
-            const colorsLine = lines[2] || '';
-
-            // --- Zeile 1: Lock / Unlock ---
-            const ignoredLock = localStorage.getItem('ignoredLockState');
-            if (lockLine.startsWith('lock')) {
-                if (ignoredLock !== text) {
-                    const reason = lockLine.split(';')[1] || 'Gesperrt';
-                    showLock(reason);
-                }
-            } else {
-                hideLock();
-                localStorage.removeItem('ignoredLockState');
-            }
-
-            // --- Zeile 2: Befehle ausführen ---
-            const lastExecutedCmd = localStorage.getItem('lastExecutedCmd') || '-';
-            
-            if (cmdLine !== '-' && cmdLine !== lastExecutedCmd) {
-                executeCommand(cmdLine);
-                localStorage.setItem('lastExecutedCmd', cmdLine);
-            } else if (cmdLine === '-') {
-                // Reset, wartet auf neuen Befehl
-                localStorage.setItem('lastExecutedCmd', '-');
-            }
-
-            // --- Zeile 3: Zusätzliche Farben ---
-            const savedExtraColors = localStorage.getItem('savedExtraColors');
-            if (colorsLine !== savedExtraColors) {
-                localStorage.setItem('savedExtraColors', colorsLine);
-                renderExtraColors(colorsLine);
-            }
-
-            localStorage.setItem('lastGistContent', text);
-        }
-
-        function executeCommand(cmd) {
-            switch(cmd.toLowerCase()) {
-                case 'menu': 
-                    document.getElementById('parentMenu').style.display = 'flex'; 
-                    break;
-                case 'delete': 
-                    clearCanvas(); 
-                    break;
-                case 'undo-delete': 
-                    undoCanvas(); 
-                    break;
-                case 'print': 
-                    window.print(); 
-                    break;
-                case 'reload':
-                    window.location.reload();
-                    break;
-            }
-        }
-
-        setInterval(fetchGist, 10000); // Alle 10 Sekunden abrufen
-        
-        // Beim Start Offline-Daten laden und dann Gist holen
-        const offlineGistContent = localStorage.getItem('lastGistContent');
-        if (offlineGistContent) processGist(offlineGistContent);
-        fetchGist();
-
-        // --- 4. Sperrbildschirm Funktionen ---
-        function showLock(reason) {
-            isLocked = true;
-            document.getElementById('lockReason').innerText = reason;
-            document.getElementById('lockOverlay').style.display = 'flex';
-        }
-
-        function hideLock() {
-            isLocked = false;
-            document.getElementById('lockOverlay').style.display = 'none';
-        }
-
-        // --- 5. Dynamische Farben rendern ---
-        function renderExtraColors(hexString) {
-            const container = document.getElementById('dynamicColors');
-            container.innerHTML = ''; 
-
-            if (!hexString || hexString === '-') return;
-
-            const colors = hexString.split(';');
-            colors.forEach(color => {
-                if (color.startsWith('#')) {
-                    const btn = document.createElement('div');
-                    btn.className = 'btn color-btn dynamic-color';
-                    btn.style.backgroundColor = color;
-                    btn.setAttribute('data-color', color);
-                    container.appendChild(btn);
-
-                    const selectColor = () => {
-                        updateActiveButton(btn);
-                        isRainbow = false;
-                        currentColor = color;
-                        setDrawMode();
-                    };
-                    btn.addEventListener('click', selectColor);
-                    btn.addEventListener('touchstart', (e) => { e.preventDefault(); selectColor(); });
-                }
-            });
-        }
-
-        // --- 6. Speicher-Funktionen ---
-        function saveArtwork() {
-            localStorage.setItem('savedArtwork', canvas.toDataURL());
-        }
-
-        function loadArtwork() {
             const dataURL = localStorage.getItem('savedArtwork');
             if (dataURL) {
                 const img = new Image();
                 img.onload = () => { ctx.drawImage(img, 0, 0); };
                 img.src = dataURL;
+                if(history.length === 0) { history.push(dataURL); historyStep = 0; }
+            } else {
+                if(history.length === 0) { saveStateToHistory(); }
             }
         }
+        window.addEventListener('resize', resizeCanvas);
 
-        function clearCanvas() {
-            localStorage.setItem('undoArtwork', canvas.toDataURL());
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            saveArtwork();
-        }
-
-        function undoCanvas() {
-            const undoData = localStorage.getItem('undoArtwork');
-            if (undoData) {
-                const img = new Image();
-                img.onload = () => {
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    ctx.drawImage(img, 0, 0);
-                    saveArtwork();
-                };
-                img.src = undoData;
-            }
-        }
-
-        // --- 7. Zeichen-Logik (Multi-Touch + Versatz behoben) ---
-        // Die Zeichenfunktion für einzelne Linienstücke
         function drawLineSegment(x0, y0, x1, y1) {
+            // Wichtig: context Settings jeden Frame erneuern, um Browser-Bugs zu verhindern
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.lineWidth = lineWidth;
+            
             ctx.beginPath();
             ctx.moveTo(x0, y0);
             ctx.lineTo(x1, y1);
-            ctx.lineWidth = lineWidth;
             
             if (isEraser) {
-                ctx.globalCompositeOperation = 'destination-out';
-                ctx.strokeStyle = 'rgba(0,0,0,1)';
+                // Fix: Erase malt jetzt weiß! Keine verbuggten Transparenzen mehr.
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.strokeStyle = '#ffffff';
             } else if (isRainbow) {
                 ctx.globalCompositeOperation = 'source-over';
                 rainbowHue = (rainbowHue + 3) % 360; 
@@ -468,107 +406,97 @@
         }
 
         function handleStart(e) {
-            if (isLocked) return;
+            if (isAppLocked) return;
             e.preventDefault(); 
-            const rect = canvas.getBoundingClientRect(); // Verhindert versetzte Linien
+            const rect = canvas.getBoundingClientRect();
 
             if (e.type === 'touchstart') {
-                const touches = e.changedTouches;
-                for (let i = 0; i < touches.length; i++) {
-                    const id = touches[i].identifier;
-                    const x = touches[i].clientX - rect.left;
-                    const y = touches[i].clientY - rect.top;
-                    ongoingTouches[id] = { x: x, y: y };
-                    // Zeichne den ersten Punkt
-                    drawLineSegment(x, y, x + 0.1, y);
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    const id = e.changedTouches[i].identifier;
+                    const x = e.changedTouches[i].clientX - rect.left;
+                    const y = e.changedTouches[i].clientY - rect.top;
+                    ongoingTouches[id] = { x, y };
+                    // Für Punkte beim Antippen
+                    drawLineSegment(x, y, x + 0.1, y + 0.1);
                 }
             } else {
-                // Maus
+                if(e.buttons === 3) return; // Rechte+Linke Maustaste blockieren fürs Malen
                 const x = e.clientX - rect.left;
                 const y = e.clientY - rect.top;
-                ongoingTouches['mouse'] = { x: x, y: y };
-                drawLineSegment(x, y, x + 0.1, y);
+                ongoingTouches['mouse'] = { x, y };
+                drawLineSegment(x, y, x + 0.1, y + 0.1);
             }
         }
 
         function handleMove(e) {
-            if (isLocked) return;
+            if (isAppLocked) return;
             e.preventDefault();
             const rect = canvas.getBoundingClientRect();
 
             if (e.type === 'touchmove') {
-                const touches = e.changedTouches;
-                for (let i = 0; i < touches.length; i++) {
-                    const id = touches[i].identifier;
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    const id = e.changedTouches[i].identifier;
                     if (ongoingTouches[id]) {
-                        const newX = touches[i].clientX - rect.left;
-                        const newY = touches[i].clientY - rect.top;
-                        
+                        const newX = e.changedTouches[i].clientX - rect.left;
+                        const newY = e.changedTouches[i].clientY - rect.top;
                         drawLineSegment(ongoingTouches[id].x, ongoingTouches[id].y, newX, newY);
-                        
-                        // Letzte Position aktualisieren
-                        ongoingTouches[id].x = newX;
-                        ongoingTouches[id].y = newY;
+                        ongoingTouches[id] = { x: newX, y: newY };
                     }
                 }
             } else {
-                // Maus
                 if (ongoingTouches['mouse']) {
                     const newX = e.clientX - rect.left;
                     const newY = e.clientY - rect.top;
                     drawLineSegment(ongoingTouches['mouse'].x, ongoingTouches['mouse'].y, newX, newY);
-                    ongoingTouches['mouse'].x = newX;
-                    ongoingTouches['mouse'].y = newY;
+                    ongoingTouches['mouse'] = { x: newX, y: newY };
                 }
             }
         }
 
         function handleEnd(e) {
-            if (isLocked) return;
+            if (isAppLocked) return;
             e.preventDefault();
+            let changed = false;
             if (e.type === 'touchend' || e.type === 'touchcancel') {
-                const touches = e.changedTouches;
-                for (let i = 0; i < touches.length; i++) {
-                    delete ongoingTouches[touches[i].identifier];
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    if(ongoingTouches[e.changedTouches[i].identifier]) changed = true;
+                    delete ongoingTouches[e.changedTouches[i].identifier];
                 }
             } else {
+                if(ongoingTouches['mouse']) changed = true;
                 delete ongoingTouches['mouse'];
             }
-            saveArtwork();
+            if(changed) saveStateToHistory();
         }
 
-        // Event Listeners für das Canvas binden
+        // Toolbar Events stoppen (Verhindert Malen & Scrollbug)
+        document.getElementById('toolbar').addEventListener('touchstart', (e) => e.stopPropagation(), {passive:false});
+        document.getElementById('toolbar').addEventListener('touchmove', (e) => e.stopPropagation(), {passive:false});
+
         canvas.addEventListener('touchstart', handleStart, { passive: false });
         canvas.addEventListener('touchmove', handleMove, { passive: false });
         canvas.addEventListener('touchend', handleEnd);
         canvas.addEventListener('touchcancel', handleEnd);
-
         canvas.addEventListener('mousedown', handleStart);
         canvas.addEventListener('mousemove', handleMove);
         canvas.addEventListener('mouseup', handleEnd);
         canvas.addEventListener('mouseleave', handleEnd);
 
-        
-        // --- 8. UI Interaktionen (Werkzeuge) ---
+
+        // --- UI & Werkzeuge ---
         function updateActiveButton(clickedBtn) {
             document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active-btn'));
             clickedBtn.classList.add('active-btn');
         }
 
         document.querySelectorAll('.color-btn:not(.dynamic-color)').forEach(btn => {
-            const selectColor = () => {
+            btn.addEventListener('click', (e) => {
                 updateActiveButton(btn);
                 const colorVal = btn.getAttribute('data-color');
-                if (colorVal === 'rainbow') {
-                    isRainbow = true;
-                } else {
-                    isRainbow = false;
-                    currentColor = colorVal;
-                }
+                isRainbow = (colorVal === 'rainbow');
+                if(!isRainbow) currentColor = colorVal;
                 setDrawMode();
-            };
-            btn.addEventListener('click', selectColor);
-            btn.addEventListener('touchstart', (e) => { e.preventDefault(); selectColor(); });
+            });
         });
 
         const modeBtn = document.getElementById('modeBtn');
@@ -582,8 +510,7 @@
             eraserIcon.style.display = 'none';
         }
 
-        modeBtn.addEventListener('touchstart', (e) => {
-            e.preventDefault();
+        modeBtn.addEventListener('click', () => {
             isEraser = !isEraser;
             if (isEraser) {
                 modeBtn.style.backgroundColor = '#f44336';
@@ -600,65 +527,316 @@
             }
         });
 
-        document.getElementById('trashBtn').addEventListener('touchstart', (e) => { e.preventDefault(); clearCanvas(); });
-        document.getElementById('trashBtn').addEventListener('click', clearCanvas);
+        document.getElementById('trashBtn').addEventListener('click', () => {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            saveStateToHistory();
+        });
 
 
-        // --- 9. Fünf-Finger Timer für Menü & Notfall-PIN ---
-        const parentMenu = document.getElementById('parentMenu');
-        let parentMenuTimer = null;
+        // --- Schlafenszeit & Locks ---
+        let bedtimeBypassed = false;
+        
+        function checkLocks() {
+            // 1. Offline Mode check
+            const offlineDisabled = localStorage.getItem('offlineModeDisabled') === 'true';
+            if (offlineDisabled && !navigator.onLine) {
+                isAppLocked = true;
+                document.getElementById('offlineOverlay').style.display = 'flex';
+                document.getElementById('bedtimeOverlay').style.display = 'none';
+                return;
+            } else {
+                document.getElementById('offlineOverlay').style.display = 'none';
+            }
+
+            // 2. Bedtime check
+            const bs = localStorage.getItem('bedtimeStart');
+            const be = localStorage.getItem('bedtimeEnd');
+            if (bs && be) {
+                const now = new Date();
+                const curr = now.getHours() * 60 + now.getMinutes();
+                const s = parseInt(bs.split(':')[0])*60 + parseInt(bs.split(':')[1]);
+                const e = parseInt(be.split(':')[0])*60 + parseInt(be.split(':')[1]);
+                
+                let isBed = false;
+                if (s < e) isBed = (curr >= s && curr < e);
+                else isBed = (curr >= s || curr < e); // Über Mitternacht
+                
+                if (isBed && !bedtimeBypassed) {
+                    isAppLocked = true;
+                    document.getElementById('bedtimeText').innerText = `${bs} Uhr - ${be} Uhr`;
+                    document.getElementById('bedtimeOverlay').style.display = 'flex';
+                    return;
+                } else if (!isBed) {
+                    bedtimeBypassed = false; // Reset Bypass am nächsten Tag
+                }
+            }
+            
+            document.getElementById('bedtimeOverlay').style.display = 'none';
+            // Falls Gist Lock nicht aktiv, freigeben
+            if(document.getElementById('lockOverlay').style.display !== 'flex') {
+                isAppLocked = false;
+            }
+        }
+        setInterval(checkLocks, 30000); // Alle 30 Sek prüfen
+        window.addEventListener('online', checkLocks);
+        window.addEventListener('offline', checkLocks);
+
+        // Bedtime Eltern Bypass Button
+        document.getElementById('bedtimeBypassBtn').addEventListener('click', async () => {
+            const pp = localStorage.getItem('parentPin');
+            if(!pp) return;
+            const input = await showPrompt("Eltern PIN eingeben:");
+            if (input === pp) {
+                bedtimeBypassed = true;
+                checkLocks();
+                appLog("Schlafenszeit durch Eltern übergangen");
+            } else if(input !== null) {
+                await showAlert("Fehler", "Falsche PIN!");
+            }
+        });
+
+
+        // --- Gist Fernsteuerung ---
+        const gistUrl = 'https://api.github.com/gists/305f300ae73a102e623b3148202af353';
+        async function fetchGist() {
+            if (!navigator.onLine) return; 
+            try {
+                // API Nutzung mit no-store umgeht den Raw-Cache zuverlässiger
+                const response = await fetch(gistUrl, { cache: 'no-store', headers: {'Pragma': 'no-cache'} });
+                if (!response.ok) return;
+                const json = await response.json();
+                const text = json.files['command.txt'].content;
+                processGist(text);
+            } catch (e) { console.log(e); }
+        }
+
+        function processGist(text) {
+            const lines = text.split(/\r?\n/).map(l => l.trim());
+            const lockLine = lines[0] || 'unlock';
+            const cmdLine = lines[1] || '-';
+            const colorsLine = lines[2] || '';
+
+            // Zeile 1: Lock / Unlock
+            const ignoredLock = localStorage.getItem('ignoredLockState');
+            if (lockLine.startsWith('lock')) {
+                if (ignoredLock !== text) {
+                    isAppLocked = true;
+                    document.getElementById('lockReason').innerText = lockLine.split(';')[1] || 'Gesperrt';
+                    document.getElementById('lockOverlay').style.display = 'flex';
+                }
+            } else {
+                document.getElementById('lockOverlay').style.display = 'none';
+                localStorage.removeItem('ignoredLockState');
+                checkLocks(); // Bedtime/Offline checken
+            }
+
+            // Zeile 2: Befehle
+            const lastExecutedCmd = localStorage.getItem('lastExecutedCmd') || '-';
+            if (cmdLine !== '-' && cmdLine !== lastExecutedCmd) {
+                appLog(`Gist-Befehl ausgeführt: ${cmdLine}`);
+                switch(cmdLine.toLowerCase()) {
+                    case 'menu': document.getElementById('parentMenu').classList.add('show'); document.getElementById('parentMenu').style.display = 'flex'; break;
+                    case 'delete': document.getElementById('trashBtn').click(); break;
+                    case 'undo-delete': document.getElementById('undoBtn').click(); break;
+                    case 'print': window.print(); break;
+                    case 'reload': window.location.reload(); break;
+                }
+                localStorage.setItem('lastExecutedCmd', cmdLine);
+            } else if (cmdLine === '-') {
+                localStorage.setItem('lastExecutedCmd', '-');
+            }
+
+            // Zeile 3: Farben
+            if (colorsLine !== localStorage.getItem('savedExtraColors')) {
+                localStorage.setItem('savedExtraColors', colorsLine);
+                renderExtraColors(colorsLine);
+            }
+            localStorage.setItem('lastGistContent', text);
+        }
+
+        function renderExtraColors(hexString) {
+            const container = document.getElementById('dynamicColors');
+            container.innerHTML = ''; 
+            if (!hexString || hexString === '-') return;
+            const colors = hexString.split(';');
+            colors.forEach(color => {
+                if (color.startsWith('#')) {
+                    const btn = document.createElement('div');
+                    btn.className = 'btn color-btn dynamic-color';
+                    btn.style.backgroundColor = color;
+                    btn.setAttribute('data-color', color);
+                    container.appendChild(btn);
+                    btn.addEventListener('click', () => {
+                        updateActiveButton(btn);
+                        isRainbow = false; currentColor = color; setDrawMode();
+                    });
+                }
+            });
+        }
+        setInterval(fetchGist, 15000); 
+        if (localStorage.getItem('lastGistContent')) processGist(localStorage.getItem('lastGistContent'));
+        fetchGist();
+
+
+        // --- 5 Finger / PC Klick Erkennung (Admin Bypass / Menü) ---
+        let touchTimer = null;
         let fiveFingersDown = false;
+        let mouseTimer = null;
+
+        async function handleMagicGesture() {
+            if (document.getElementById('bedtimeOverlay').style.display === 'flex' || 
+                document.getElementById('offlineOverlay').style.display === 'flex' ||
+                document.getElementById('lockOverlay').style.display === 'flex') {
+                
+                // Administrator Bypass während Lock
+                const yes = await showConfirm("Administrator Einstellungen", "Möchten Sie die Admin-Einstellungen öffnen?");
+                if(yes) {
+                    const pin = await showPrompt("Admin PIN eingeben (1104):");
+                    if (pin === '1104') {
+                        appLog("Admin Lock Bypass aktiviert");
+                        bedtimeBypassed = true;
+                        localStorage.setItem('ignoredLockState', localStorage.getItem('lastGistContent'));
+                        document.getElementById('lockOverlay').style.display = 'none';
+                        checkLocks();
+                        openAdminMenu();
+                    } else if (pin) {
+                        await showAlert("Fehler", "Falsche Admin PIN!");
+                    }
+                }
+            } else {
+                // Normales Menü öffnen
+                document.getElementById('parentMenu').style.display = 'flex';
+                setTimeout(()=>document.getElementById('parentMenu').classList.add('show'),10);
+            }
+        }
 
         window.addEventListener('touchstart', (e) => {
             if (e.touches.length >= 5) {
                 fiveFingersDown = true;
-                clearTimeout(parentMenuTimer); 
-                
-                if (isLocked) {
-                    parentMenuTimer = setTimeout(() => {
-                        if (fiveFingersDown) {
-                            const pin = prompt('Notfall-Entsperrung (PIN eingeben):');
-                            if (pin === '1104') {
-                                localStorage.setItem('ignoredLockState', localStorage.getItem('lastGistContent'));
-                                hideLock();
-                            }
-                        }
-                    }, 3000);
-                } else {
-                    parentMenuTimer = setTimeout(() => {
-                        if (fiveFingersDown) parentMenu.style.display = 'flex';
-                    }, 2000); 
+                clearTimeout(touchTimer); 
+                touchTimer = setTimeout(() => { if (fiveFingersDown) handleMagicGesture(); }, 5000);
+            }
+        });
+        window.addEventListener('touchend', (e) => { if (e.touches.length < 5) { fiveFingersDown = false; clearTimeout(touchTimer); }});
+        
+        window.addEventListener('mousedown', (e) => {
+            if(e.buttons === 3) { // Links + Rechts gleichzeitig
+                clearTimeout(mouseTimer);
+                mouseTimer = setTimeout(() => { handleMagicGesture(); }, 5000);
+            }
+        });
+        window.addEventListener('mouseup', () => clearTimeout(mouseTimer));
+
+
+        // --- Eltern Menü Logik ---
+        document.getElementById('pmBtnClose').onclick = () => {
+            document.getElementById('parentMenu').classList.remove('show');
+            setTimeout(() => document.getElementById('parentMenu').style.display = 'none', 300);
+        };
+        
+        document.getElementById('pmBtnPrint').onclick = () => {
+            const btn = document.getElementById('pmBtnPrint');
+            if(btn.style.opacity === '0.5') return; // Wenn im Admin deaktiviert
+            window.print();
+        };
+
+        document.getElementById('pmBtnBedtime').onclick = async () => {
+            if(!localStorage.getItem('parentPin')) {
+                await showAlert("Achtung", "Bitte legen Sie zuerst im ADMIN Bereich eine Eltern-PIN fest!");
+                return;
+            }
+            const times = await showTimePrompt();
+            if(times && times.start && times.end) {
+                localStorage.setItem('bedtimeStart', times.start);
+                localStorage.setItem('bedtimeEnd', times.end);
+                appLog(`Schlafenszeit gesetzt: ${times.start} - ${times.end}`);
+                await showAlert("Gespeichert", `Schlafenszeit aktiv von ${times.start} bis ${times.end}`);
+                checkLocks();
+            }
+        };
+
+        document.getElementById('pmBtnAdmin').onclick = async () => {
+            const pin = await showPrompt("Admin PIN (1104):");
+            if (pin === '1104') {
+                openAdminMenu();
+            } else if(pin) {
+                await showAlert("Fehler", "Falsche Admin PIN!");
+            }
+        };
+
+        // --- Admin Menü Logik ---
+        function openAdminMenu() {
+            document.getElementById('parentMenu').classList.remove('show');
+            setTimeout(() => {
+                document.getElementById('parentMenu').style.display = 'none';
+                document.getElementById('adminMenu').style.display = 'flex';
+                setTimeout(() => document.getElementById('adminMenu').classList.add('show'), 10);
+                appLog("Admin Menü geöffnet");
+                renderLogs();
+            }, 300);
+        }
+
+        document.getElementById('amBtnClose').onclick = () => {
+            document.getElementById('adminMenu').classList.remove('show');
+            setTimeout(() => document.getElementById('adminMenu').style.display = 'none', 300);
+        };
+
+        document.getElementById('amBtnClearData').onclick = async () => {
+            const yes = await showConfirm("Warnung", "Wirklich alle Kunstwerke löschen?");
+            if (yes) {
+                localStorage.removeItem('savedArtwork');
+                history = []; historyStep = -1;
+                ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+                appLog("Alle lokalen Daten gelöscht");
+                await showAlert("Erfolg", "Speicher geleert.");
+            }
+        };
+
+        document.getElementById('amBtnToggleBedtime').onclick = async () => {
+            localStorage.removeItem('bedtimeStart');
+            localStorage.removeItem('bedtimeEnd');
+            appLog("Schlafenszeit deaktiviert");
+            await showAlert("Gelöscht", "Schlafenszeit wurde entfernt.");
+            checkLocks();
+        };
+
+        document.getElementById('amBtnParentPin').onclick = async () => {
+            const curr = localStorage.getItem('parentPin');
+            let msg = curr ? `Aktuelle PIN: ${curr}\n` : "Keine PIN festgelegt.\n";
+            const yes = await showConfirm("Eltern PIN", msg + "Möchten Sie eine neue PIN setzen?");
+            if (yes) {
+                const neu = await showPrompt("Neue Eltern PIN eingeben:");
+                if (neu) {
+                    localStorage.setItem('parentPin', neu);
+                    appLog("Eltern-PIN geändert");
+                    await showAlert("Erfolg", "Eltern-PIN gespeichert.");
+                }
+            } else {
+                const del = await showConfirm("Löschen?", "Eltern-PIN entfernen?");
+                if(del) {
+                    localStorage.removeItem('parentPin');
+                    appLog("Eltern-PIN entfernt");
                 }
             }
-        });
+        };
 
-        window.addEventListener('touchend', (e) => {
-            if (e.touches.length < 5) {
-                fiveFingersDown = false;
-                clearTimeout(parentMenuTimer);
+        document.getElementById('amBtnOfflineMode').onclick = async () => {
+            const disabled = localStorage.getItem('offlineModeDisabled') === 'true';
+            const yes = await showConfirm("Offline Modus", `Aktuell: ${disabled ? 'Gesperrt' : 'Erlaubt'}\n\nUmschalten?`);
+            if (yes) {
+                localStorage.setItem('offlineModeDisabled', (!disabled).toString());
+                appLog(`Offline-Modus geändert auf: ${!disabled ? 'Gesperrt' : 'Erlaubt'}`);
+                checkLocks();
             }
-        });
+        };
 
-        // --- 10. Eltern-Menü Buttons ---
-        document.getElementById('closeMenuBtn').addEventListener('click', () => { parentMenu.style.display = 'none'; });
-        document.getElementById('undoTrashBtn').addEventListener('click', () => { undoCanvas(); parentMenu.style.display = 'none'; });
-        document.getElementById('printBtn').addEventListener('click', () => { parentMenu.style.display = 'none'; setTimeout(() => { window.print(); }, 500); });
-        
-        document.getElementById('clearDataBtn').addEventListener('click', () => {
-            if(confirm('Wirklich alles endgültig löschen?')) {
-                localStorage.removeItem('savedArtwork');
-                localStorage.removeItem('undoArtwork');
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                parentMenu.style.display = 'none';
-            }
-        });
-
+        // Init
         resizeCanvas();
+        checkLocks();
 
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js').catch(err => console.log('SW Error:', err));
-            });
+            window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(()=>{}); });
         }
     </script>
 </body>
