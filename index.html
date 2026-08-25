@@ -2,89 +2,116 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <!-- PWA & Fullscreen für Android Chrome (S25 Ultra) & iOS -->
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- App Icons -->
+    <link rel="icon" href="icon.png" type="image/png">
+    <link rel="apple-touch-icon" href="icon.png">
     <link rel="manifest" href="manifest.json">
+    
     <title>Mal-App</title>
+    
     <style>
         :root {
             --theme-color: #2196F3;
-            --theme-bg: rgba(33, 150, 243, 0.2);
-            --theme-glass: rgba(240, 240, 240, 0.95);
+            --theme-bg: rgba(33, 150, 243, 0.15);
+            --theme-glass: rgba(255, 255, 255, 0.85);
+            --shadow-soft: 0 8px 24px rgba(0,0,0,0.12);
         }
 
         /* Reset & Layout */
-        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
-        body { width: 100vw; height: 100vh; overflow: hidden; background-color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; touch-action: none; }
-        img, canvas { -webkit-touch-callout: none; }
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; touch-action: none; }
+        body { width: 100vw; height: 100vh; overflow: hidden; background-color: #f8f9fa; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        img, canvas { -webkit-touch-callout: none; pointer-events: auto; }
 
         /* Splash Screen */
-        #splash { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #ffffff; z-index: 9999; display: flex; justify-content: center; align-items: center; font-size: 32px; font-weight: bold; color: var(--theme-color); transition: opacity 0.5s ease; }
-
+        #splash { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #ffffff; z-index: 9999; display: flex; justify-content: center; align-items: center; font-size: 36px; font-weight: 800; color: var(--theme-color); letter-spacing: 2px; transition: opacity 0.6s ease, transform 0.6s ease; }
+        
         /* Fullscreen Overlays (Lock, Bedtime, Offline) */
-        .fullscreen-lock { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(10,10,10,0.95); z-index: 9000; justify-content: center; align-items: center; flex-direction: column; color: white; text-align: center; padding: 20px; backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); }
-        .lock-icon { font-size: 80px; margin-bottom: 20px; }
-        .lock-text { font-size: 32px; font-weight: bold; }
-        .lock-subtext { font-size: 20px; color: #aaa; margin-top: 10px; }
-        #bedtimeBypassBtn { position: absolute; top: 20px; right: 20px; padding: 10px 20px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; color: white; font-weight: bold; z-index: 9001; cursor: pointer; }
+        .fullscreen-lock { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(15, 15, 20, 0.95); z-index: 9000; justify-content: center; align-items: center; flex-direction: column; color: white; text-align: center; padding: 20px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+        .lock-icon-svg { width: 80px; height: 80px; margin-bottom: 20px; stroke: white; stroke-width: 1.5; }
+        .lock-text { font-size: 32px; font-weight: 800; letter-spacing: 1px; }
+        .lock-subtext { font-size: 18px; color: #b0bec5; margin-top: 12px; }
+        #bedtimeBypassBtn { position: absolute; top: max(20px, env(safe-area-inset-top)); right: 20px; padding: 12px 24px; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.2); border-radius: 16px; color: white; font-weight: bold; z-index: 9001; cursor: pointer; transition: background 0.2s; }
+        #bedtimeBypassBtn:active { background: rgba(255,255,255,0.2); }
 
-        /* Toolbar */
-        #toolbar { position: absolute; top: 0; left: 0; width: 100%; height: 80px; background-color: var(--theme-glass); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); display: flex; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); z-index: 10; border-bottom: 2px solid var(--theme-color); transition: transform 0.3s; }
-        .toolbar-hidden { transform: translateY(-100%); }
+        /* Bubbly Toolbar */
+        #toolbar { position: absolute; top: env(safe-area-inset-top); left: 50%; transform: translateX(-50%); width: 96%; max-width: 1000px; height: 76px; margin-top: 12px; background-color: var(--theme-glass); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); display: flex; align-items: center; box-shadow: var(--shadow-soft); z-index: 10; border-radius: 38px; padding: 0 8px; border: 1px solid rgba(255,255,255,0.5); transition: opacity 0.3s, transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .toolbar-hidden { transform: translate(-50%, -150%) !important; opacity: 0; pointer-events: none; }
 
-        #colorScrollArea { display: flex; align-items: center; height: 100%; flex-grow: 1; overflow-x: auto; overflow-y: hidden; padding: 0 10px; scrollbar-width: none; touch-action: pan-x; }
+        /* Areas inside Toolbar */
+        #colorScrollArea { display: flex; align-items: center; height: 100%; flex-grow: 1; overflow-x: auto; overflow-y: hidden; padding: 0 8px; scrollbar-width: none; touch-action: pan-x; }
         #colorScrollArea::-webkit-scrollbar { display: none; }
-        #toolsArea { display: flex; align-items: center; height: 100%; flex-shrink: 0; padding: 0 10px; border-left: 2px solid #ccc; background-color: transparent; }
+        #toolsArea { display: flex; align-items: center; height: 100%; flex-shrink: 0; padding-left: 12px; border-left: 2px solid rgba(0,0,0,0.08); }
 
-        .btn { width: 50px; height: 50px; border-radius: 50%; border: 4px solid #ffffff; margin-right: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); flex-shrink: 0; display: flex; justify-content: center; align-items: center; transition: transform 0.2s, border-color 0.2s; cursor: pointer; background-color: #eee; }
-        .btn:active { transform: scale(0.9); }
-        .active-btn { transform: scale(1.15); border-color: #333333; }
+        /* Buttons */
+        .btn { width: 52px; height: 52px; border-radius: 50%; border: 4px solid #ffffff; margin-right: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); flex-shrink: 0; display: flex; justify-content: center; align-items: center; transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s; cursor: pointer; background-color: #f1f3f5; }
+        .btn:active { transform: scale(0.85); }
+        .active-btn { transform: scale(1.15); border-color: #333333; box-shadow: 0 8px 16px rgba(0,0,0,0.2); }
 
+        /* Spezifische Buttons */
         @keyframes rainbowSpin { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
-        .rainbow-btn { background: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3, #ff0000); background-size: 200% 100%; animation: rainbowSpin 2s linear infinite; }
-
+        .rainbow-btn { background: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3, #ff0000); background-size: 200% 100%; animation: rainbowSpin 3s linear infinite; }
+        
         #modeBtn { background-color: #4CAF50; }
-        #trashBtn { background-color: #555555; }
-        .undo-redo-btn { background-color: var(--theme-color); }
-        #addShapeBtn { background-color: #9C27B0; display: none; }
+        #trashBtn { background-color: #f44336; border-color: #ffcdd2; margin-right: 0;}
+        .undo-redo-btn { background-color: var(--theme-color); border-color: #e3f2fd; }
+        .expert-btn { background-color: #9C27B0; border-color: #f3e5f5; display: none; }
 
-        /* Workspace (Canvas + Shapes) */
+        /* Mobile Color Button */
+        #mobileColorBtn { display: none; background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red); border-color: #fff; }
+
+        @media (max-width: 768px) {
+            #colorScrollArea { display: none; } /* Scrollbereich auf dem Handy verstecken */
+            #mobileColorBtn { display: flex; } /* Bunten Button zeigen */
+            #toolbar { width: 90%; margin-top: max(10px, env(safe-area-inset-top)); }
+        }
+
+        /* Workspace & Canvas */
         #workspace { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; transform-origin: 0 0; z-index: 1; }
         #canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: white; }
-        .draggable-shape { position: absolute; width: 100px; height: 100px; transform: translate(-50%, -50%); z-index: 5; pointer-events: auto; touch-action: none; display: flex; justify-content: center; align-items: center; filter: drop-shadow(0px 4px 5px rgba(0,0,0,0.3)); }
-        
-        /* Apple Like Liquid Glass Menus */
-        .glass-menu { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0,0,0,0.5); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 9500; justify-content: center; align-items: center; flex-direction: column; opacity: 0; transition: opacity 0.3s; }
-        .glass-menu.show { opacity: 1; }
-        .menu-box { background: rgba(30, 30, 30, 0.85); border: 1px solid var(--theme-color); border-radius: 24px; padding: 30px; text-align: center; width: 90%; max-width: 400px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); color: white; display: flex; flex-direction: column; gap: 10px; max-height: 90vh; overflow-y: auto; }
-        .menu-box h2 { margin-bottom: 10px; font-weight: 600; color: var(--theme-color); }
-        .menu-box p { margin-bottom: 15px; font-size: 14px; color: #ccc; }
-        
-        .menu-btn { width: 100%; padding: 14px; font-size: 16px; border: none; border-radius: 12px; background-color: rgba(255,255,255,0.1); color: white; font-weight: 500; transition: background 0.2s, border-color 0.2s; cursor: pointer; border: 1px solid rgba(255,255,255,0.05); }
-        .menu-btn:active { background-color: rgba(255,255,255,0.2); }
-        .menu-btn.red { background-color: rgba(244, 67, 54, 0.4); border-color: rgba(244, 67, 54, 0.6); }
-        .menu-btn.blue { background-color: var(--theme-bg); border-color: var(--theme-color); }
-        .menu-btn:disabled { opacity: 0.5; pointer-events: none; }
+        .draggable-shape { position: absolute; transform: translate(-50%, -50%); z-index: 5; touch-action: none; filter: drop-shadow(0px 8px 16px rgba(0,0,0,0.25)); }
+        .draggable-shape img { max-width: 300px; max-height: 300px; border-radius: 12px; pointer-events: none; } /* pointer-events none on img prevents ghost drag */
 
-        .glass-input { width: 100%; padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.4); color: white; font-size: 18px; text-align: center; margin-bottom: 15px; outline: none; user-select: auto; -webkit-user-select: auto; }
+        /* Liquid Glass Menüs */
+        .glass-menu { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0,0,0,0.5); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); z-index: 9500; justify-content: center; align-items: center; flex-direction: column; opacity: 0; transition: opacity 0.3s ease; }
+        .glass-menu.show { opacity: 1; }
+        .menu-box { background: rgba(30, 32, 35, 0.85); border: 1px solid rgba(255,255,255,0.1); border-top: 1px solid rgba(255,255,255,0.2); border-radius: 32px; padding: 32px; text-align: center; width: 90%; max-width: 420px; box-shadow: 0 24px 48px rgba(0,0,0,0.4); color: white; display: flex; flex-direction: column; gap: 12px; max-height: 90vh; overflow-y: auto; scrollbar-width: none; }
+        .menu-box::-webkit-scrollbar { display: none; }
+        .menu-box h2 { margin-bottom: 8px; font-weight: 700; font-size: 24px; color: var(--theme-color); }
+        
+        .menu-btn { width: 100%; padding: 16px; font-size: 16px; border: none; border-radius: 16px; background-color: rgba(255,255,255,0.1); color: white; font-weight: 600; transition: all 0.2s; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 10px; }
+        .menu-btn:active { transform: scale(0.97); background-color: rgba(255,255,255,0.2); }
+        .menu-btn.red { background-color: rgba(244, 67, 54, 0.2); color: #ff5252; border: 1px solid rgba(244, 67, 54, 0.3); }
+        .menu-btn.blue { background-color: var(--theme-bg); border: 1px solid var(--theme-color); color: #ffffff; }
+
+        /* Eingabefelder */
+        .glass-input { width: 100%; padding: 16px; border-radius: 16px; border: 2px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.4); color: white; font-size: 18px; text-align: center; margin-bottom: 8px; outline: none; transition: border-color 0.3s; user-select: auto; -webkit-user-select: auto; font-family: inherit; }
         .glass-input:focus { border-color: var(--theme-color); }
-        .row { display: flex; gap: 10px; }
+        .row { display: flex; gap: 12px; }
         .row > * { flex: 1; }
 
-        #logArea { background: rgba(0,0,0,0.5); padding: 10px; border-radius: 12px; font-family: monospace; font-size: 11px; text-align: left; height: 150px; overflow-y: auto; color: #00ff00; margin-bottom: 10px; }
-        #logArea div { margin-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 2px;}
+        #logArea { background: rgba(0,0,0,0.4); padding: 12px; border-radius: 16px; font-family: monospace; font-size: 11px; text-align: left; height: 160px; overflow-y: auto; color: #69f0ae; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.05); }
+        #logArea div { margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px dashed rgba(255,255,255,0.1); }
 
-        /* Select & Color Input Styling */
-        select.glass-input { appearance: none; }
-        input[type="color"].glass-input { padding: 0; height: 50px; cursor: pointer; }
+        select.glass-input { appearance: none; cursor: pointer; }
+        input[type="color"].glass-input { padding: 4px; height: 56px; cursor: pointer; }
         
-        .save-item { padding: 10px; background: rgba(255,255,255,0.1); border-radius: 8px; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center;}
-        .save-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .save-item { padding: 12px; background: rgba(255,255,255,0.08); border-radius: 16px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.05); }
+        .save-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
 
-        svg { width: 26px; height: 26px; stroke: white; }
+        /* Mobile Color Grid Picker */
+        #mobileColorGrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; justify-items: center; }
 
-        /* NUR DAS BILD DRUCKEN */
+        svg { width: 24px; height: 24px; stroke: white; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+        .btn svg { filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
+
+        /* DRUCKEN (Nur Bild) */
         @media print {
             body * { visibility: hidden !important; }
             #workspace, #workspace * { visibility: visible !important; }
@@ -97,19 +124,41 @@
 
     <div id="splash">Marco liebt dich</div>
 
-    <!-- Locks -->
-    <div id="lockOverlay" class="fullscreen-lock"><div class="lock-icon">🔒</div><div id="lockReason" class="lock-text">Gesperrt</div></div>
-    <div id="bedtimeOverlay" class="fullscreen-lock"><button id="bedtimeBypassBtn">ELTERN</button><div class="lock-icon">🌙</div><div class="lock-text">Schlafenszeit</div><div id="bedtimeText" class="lock-subtext"></div></div>
-    <div id="offlineOverlay" class="fullscreen-lock"><div class="lock-icon" style="color: #F44336;">⚠️</div><div class="lock-text" style="color: #F44336;">OFFLINE</div><div class="lock-subtext">Internetverbindung benötigt.</div></div>
+    <!-- Vollbild Locks -->
+    <div id="lockOverlay" class="fullscreen-lock">
+        <svg class="lock-icon-svg" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        <div id="lockReason" class="lock-text">Gesperrt</div>
+    </div>
+    
+    <div id="bedtimeOverlay" class="fullscreen-lock">
+        <button id="bedtimeBypassBtn">ELTERN</button>
+        <svg class="lock-icon-svg" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+        <div class="lock-text">Schlafenszeit</div>
+        <div id="bedtimeText" class="lock-subtext"></div>
+    </div>
+    
+    <div id="offlineOverlay" class="fullscreen-lock">
+        <svg class="lock-icon-svg" style="stroke: #ff5252;" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        <div class="lock-text" style="color: #ff5252;">OFFLINE</div>
+        <div class="lock-subtext">Internetverbindung wird benötigt.</div>
+    </div>
 
-    <!-- Toolbar -->
+    <!-- Versteckter File Input für Bildimport -->
+    <input type="file" id="imageInputHidden" accept="image/*" style="display:none">
+
+    <!-- Schwebende Werkzeugleiste -->
     <div id="toolbar">
+        <!-- Button für Mobile Farbpalette -->
+        <div class="btn" id="mobileColorBtn">
+            <svg viewBox="0 0 24 24"><circle cx="13.5" cy="6.5" r=".5" fill="white"></circle><circle cx="17.5" cy="10.5" r=".5" fill="white"></circle><circle cx="8.5" cy="7.5" r=".5" fill="white"></circle><circle cx="6.5" cy="12.5" r=".5" fill="white"></circle><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c1.06 0 1.94-.92 1.94-2 0-.53-.2-1.03-.55-1.42-.32-.37-.53-.87-.53-1.42 0-1.08.92-2 2-2h1.66C19.57 15.16 22 12.87 22 10c0-4.42-4.48-8-10-8z"></path></svg>
+        </div>
+
         <div id="colorScrollArea">
             <div class="btn color-btn active-btn" style="background-color: #000000;" data-color="#000000"></div>
             <div class="btn color-btn rainbow-btn" data-color="rainbow"></div>
             <div class="btn color-btn" style="background-color: #FFC0CB;" data-color="#FFC0CB"></div>
             <div class="btn color-btn" style="background-color: #FF69B4;" data-color="#FF69B4"></div>
-            <div class="btn color-btn" style="background-color: #FF00FF;" data-color="#FF00FF"></div>
+            <div class="btn color-btn" style="background-color: #9C27B0;" data-color="#9C27B0"></div>
             <div class="btn color-btn" style="background-color: #00E5FF;" data-color="#00E5FF"></div>
             <div class="btn color-btn" style="background-color: #8D6E63;" data-color="#8D6E63"></div>
             <div class="btn color-btn" style="background-color: #FF9800;" data-color="#FF9800"></div>
@@ -121,25 +170,37 @@
         </div>
 
         <div id="toolsArea">
-            <div class="btn" id="addShapeBtn">
-                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-            </div>
-            <div class="btn undo-redo-btn" id="undoBtn"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10h10a5 5 0 0 1 5 5v0a5 5 0 0 1-5 5H9"/><polyline points="3 10 7 14 7 6"/></svg></div>
-            <div class="btn undo-redo-btn" id="redoBtn"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10H11a5 5 0 0 0-5 5v0a5 5 0 0 0 5 5h4"/><polyline points="21 10 17 14 17 6"/></svg></div>
+            <div class="btn expert-btn" id="addShapeBtn"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg></div>
+            <div class="btn expert-btn" id="importImgBtn"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg></div>
+            
+            <div class="btn undo-redo-btn" id="undoBtn"><svg viewBox="0 0 24 24"><path d="M3 10h10a5 5 0 0 1 5 5v0a5 5 0 0 1-5 5H9"/><polyline points="3 10 7 14 7 6"/></svg></div>
+            <div class="btn undo-redo-btn" id="redoBtn"><svg viewBox="0 0 24 24"><path d="M21 10H11a5 5 0 0 0-5 5v0a5 5 0 0 0 5 5h4"/><polyline points="21 10 17 14 17 6"/></svg></div>
+            
             <div class="btn" id="modeBtn">
-                <svg id="penIcon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"></path><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path><path d="M2 2l7.586 7.586"></path><circle cx="11" cy="11" r="2"></circle></svg>
-                <svg id="eraserIcon" style="display: none;" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20H7L3 16C2.5 15.5 2.5 14.5 3 14L13 4C13.5 3.5 14.5 3.5 15 4L20 9C20.5 9.5 20.5 10.5 20 11L11 20H20V20Z"></path></svg>
+                <svg id="penIcon" viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3z"></path><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path><path d="M2 2l7.586 7.586"></path><circle cx="11" cy="11" r="2"></circle></svg>
+                <svg id="eraserIcon" style="display: none;" viewBox="0 0 24 24"><path d="M20 20H7L3 16C2.5 15.5 2.5 14.5 3 14L13 4C13.5 3.5 14.5 3.5 15 4L20 9C20.5 9.5 20.5 10.5 20 11L11 20H20V20Z"></path></svg>
             </div>
-            <div class="btn" id="trashBtn"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path></svg></div>
+            <div class="btn" id="trashBtn"><svg viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path></svg></div>
         </div>
     </div>
 
-    <!-- Workspace -->
+    <!-- Arbeitsfläche -->
     <div id="workspace">
         <canvas id="canvas"></canvas>
     </div>
 
-    <!-- Menüs -->
+    <!-- Mobile Color Picker Menu -->
+    <div id="mobileColorMenu" class="glass-menu">
+        <div class="menu-box">
+            <h2>Farbe wählen</h2>
+            <div id="mobileColorGrid">
+                <!-- Wird per JS befüllt -->
+            </div>
+            <button class="menu-btn blue" id="mcBtnClose">Zurück</button>
+        </div>
+    </div>
+
+    <!-- UI Dialoge (Liquid Glass) -->
     <div id="baseMenu" class="glass-menu">
         <div class="menu-box">
             <h2>Optionen</h2>
@@ -172,7 +233,7 @@
 
     <div id="adminMenu" class="glass-menu">
         <div class="menu-box">
-            <h2 style="color: #F44336;">ADMIN</h2>
+            <h2 style="color: #ff5252;">ADMIN</h2>
             <div id="logArea"></div>
             <button class="menu-btn red" id="amBtnClearData">Gesamten Speicher leeren</button>
             <button class="menu-btn" id="amBtnToggleBedtime">Schlafenszeit entfernen</button>
@@ -184,7 +245,7 @@
     <div id="saveLoadMenu" class="glass-menu">
         <div class="menu-box">
             <h2>Galerie</h2>
-            <div id="saveList" style="text-align: left; max-height: 150px; overflow-y: auto; margin-bottom: 10px;"></div>
+            <div id="saveList" style="text-align: left; max-height: 180px; overflow-y: auto; margin-bottom: 12px; scrollbar-width: none;"></div>
             <button class="menu-btn blue" id="slBtnSave">Aktuelles Bild Speichern</button>
             <div class="row">
                 <button class="menu-btn" id="slBtnExport">Export (.json)</button>
@@ -195,7 +256,7 @@
         </div>
     </div>
 
-    <!-- Custom Dialogs -->
+    <!-- Generische Custom Popups -->
     <div id="customPrompt" class="glass-menu">
         <div class="menu-box">
             <h2 id="cpTitle">Eingabe</h2>
@@ -241,17 +302,17 @@
     </div>
 
     <script>
-        // --- Globale Variablen ---
+        // --- Globale Variablen & Theme ---
         let appMode = localStorage.getItem('appMode') || 'einfach';
         let themeColor = localStorage.getItem('themeColor') || '#2196F3';
         
         let wsScale = 1, wsPanX = 0, wsPanY = 0;
         let isAppLocked = false, bedtimeBypassed = false;
         
-        // --- Theme Anwenden ---
         function applyTheme() {
             document.documentElement.style.setProperty('--theme-color', themeColor);
-            document.documentElement.style.setProperty('--theme-bg', themeColor + '33'); // mit transparenz
+            // Theme Background with transparency (using substring hack for simple hex)
+            document.documentElement.style.setProperty('--theme-bg', themeColor + '40'); 
             document.getElementById('themeColorInput').value = themeColor;
         }
         applyTheme();
@@ -266,7 +327,7 @@
             if(logArea) logArea.innerHTML = logs.map(l => `<div>${l}</div>`).join('');
         }
 
-        // --- Liquid Glass Dialogs & Keyboard Support ---
+        // --- Keyboard Shortcuts für Dialoge ---
         function bindKeys(okBtnId, cancelBtnId) {
             const handler = (e) => {
                 if(e.key === 'Enter') { e.preventDefault(); document.getElementById(okBtnId).click(); }
@@ -276,6 +337,7 @@
             return () => window.removeEventListener('keydown', handler);
         }
 
+        // --- Custom Dialog Promises ---
         function showAlert(title, message, btnText = "OK") {
             return new Promise(resolve => {
                 const modal = document.getElementById('customAlert');
@@ -308,11 +370,7 @@
                 setTimeout(() => modal.classList.add('show'), 10);
                 const unbind = bindKeys('ccOk', 'ccCancel');
                 
-                const close = (res) => {
-                    unbind();
-                    modal.classList.remove('show');
-                    setTimeout(() => { modal.style.display = 'none'; resolve(res); }, 300);
-                };
+                const close = (res) => { unbind(); modal.classList.remove('show'); setTimeout(() => { modal.style.display = 'none'; resolve(res); }, 300); };
                 document.getElementById('ccOk').onclick = () => close(true);
                 document.getElementById('ccCancel').onclick = () => close(false);
             });
@@ -332,43 +390,36 @@
                 setTimeout(() => { modal.classList.add('show'); input.focus(); }, 10);
                 const unbind = bindKeys('cpOk', 'cpCancel');
                 
-                const close = (res) => {
-                    unbind();
-                    modal.classList.remove('show');
-                    setTimeout(() => { modal.style.display = 'none'; resolve(res); }, 300);
-                };
+                const close = (res) => { unbind(); modal.classList.remove('show'); setTimeout(() => { modal.style.display = 'none'; resolve(res); }, 300); };
 
                 let holdTimer;
-                const downEvent = (e) => {
+                const downEvent = () => {
                     if(allowAdminBypass && input.value === '') {
                         holdTimer = setTimeout(async () => {
-                            clearTimeout(holdTimer);
-                            unbind();
-                            modal.classList.remove('show');
-                            modal.style.display = 'none';
-                            const ap = prompt("ADMIN PIN:"); // Nativer Fallback für geheimen Bypass
-                            if(ap === '1104') resolve('ADMIN_BYPASS');
-                            else resolve(null);
+                            clearTimeout(holdTimer); unbind(); modal.classList.remove('show'); modal.style.display = 'none';
+                            const ap = prompt("ADMIN PIN:"); 
+                            if(ap === '1104') resolve('ADMIN_BYPASS'); else resolve(null);
                         }, 2000);
                     }
                 };
                 const upEvent = () => clearTimeout(holdTimer);
-                
-                okBtn.addEventListener('mousedown', downEvent);
-                okBtn.addEventListener('touchstart', downEvent);
-                okBtn.addEventListener('mouseup', upEvent);
-                okBtn.addEventListener('touchend', upEvent);
+                okBtn.addEventListener('pointerdown', downEvent);
+                okBtn.addEventListener('pointerup', upEvent);
+                okBtn.addEventListener('pointerleave', upEvent);
 
                 okBtn.onclick = () => close(input.value);
                 document.getElementById('cpCancel').onclick = () => close(null);
             });
         }
 
-        // --- Modus System ---
+        // --- Modus UI Management ---
         function applyMode() {
             document.getElementById('appModeSelect').value = appMode;
             const tb = document.getElementById('toolbar');
-            const shapeBtn = document.getElementById('addShapeBtn');
+            
+            // Sichtbarkeiten
+            document.querySelectorAll('.undo-redo-btn').forEach(b => b.style.display = (appMode === 'erweitert') ? 'flex' : 'none');
+            document.querySelectorAll('.expert-btn').forEach(b => b.style.display = (appMode === 'erweitert') ? 'flex' : 'none');
             
             if(appMode === 'simpel') {
                 tb.classList.add('toolbar-hidden');
@@ -376,54 +427,70 @@
                 tb.classList.remove('toolbar-hidden');
             }
             
-            if(appMode === 'erweitert') {
-                shapeBtn.style.display = 'flex';
-            } else {
-                shapeBtn.style.display = 'none';
-                wsScale = 1; wsPanX = 0; wsPanY = 0;
-                updateWorkspaceTransform();
+            if(appMode !== 'erweitert') {
+                wsScale = 1; wsPanX = 0; wsPanY = 0; updateWorkspaceTransform();
                 document.querySelectorAll('.draggable-shape').forEach(el => el.remove());
             }
         }
 
-        // --- Startbildschirm ---
+        // --- Initialisierung Startbildschirm ---
         window.addEventListener('load', () => {
             const isMobile = window.innerWidth <= 768 || /Android|iPhone|iPad/i.test(navigator.userAgent);
             const splash = document.getElementById('splash');
-            if(isMobile) splash.style.display = 'none';
-            else setTimeout(() => { splash.style.opacity = '0'; setTimeout(() => splash.style.display='none', 500); }, 1000);
+            if(isMobile) {
+                splash.style.display = 'none';
+                setupMobileColorPicker();
+            }
+            else setTimeout(() => { splash.style.opacity = '0'; setTimeout(() => splash.style.display='none', 600); }, 1000);
             
             applyMode();
             appLog("App gestartet");
             renderLogs();
         });
 
-        // --- Workspace & Canvas Core ---
+        function setupMobileColorPicker() {
+            const grid = document.getElementById('mobileColorGrid');
+            const btns = document.querySelectorAll('#colorScrollArea .color-btn');
+            btns.forEach(b => {
+                const clone = b.cloneNode(true);
+                clone.style.margin = '0';
+                clone.onclick = () => {
+                    b.click(); // Trigger original
+                    document.getElementById('mobileColorMenu').classList.remove('show');
+                    setTimeout(()=>document.getElementById('mobileColorMenu').style.display = 'none', 300);
+                };
+                grid.appendChild(clone);
+            });
+            document.getElementById('mobileColorBtn').onclick = () => {
+                document.getElementById('mobileColorMenu').style.display = 'flex';
+                setTimeout(()=>document.getElementById('mobileColorMenu').classList.add('show'), 10);
+            };
+            document.getElementById('mcBtnClose').onclick = () => {
+                document.getElementById('mobileColorMenu').classList.remove('show');
+                setTimeout(()=>document.getElementById('mobileColorMenu').style.display = 'none', 300);
+            };
+        }
+
+        // --- Canvas & History Core ---
         const workspace = document.getElementById('workspace');
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
         
         let isEraser = false, isRainbow = false, currentColor = '#000000', rainbowHue = 0;
-        const lineWidth = 15;
-        const ongoingTouches = {};
+        const baseLineWidth = 15;
+        const ongoingPointers = {}; // Pointer Events
         
-        // History
         let history = []; let historyStep = -1;
 
         function saveStateToHistory() {
-            historyStep++;
-            history.length = historyStep; 
-            history.push(canvas.toDataURL());
+            historyStep++; history.length = historyStep; history.push(canvas.toDataURL());
             if (history.length > 30) { history.shift(); historyStep--; }
             localStorage.setItem('savedArtwork', history[historyStep]);
         }
-
         function restoreHistoryState() {
             ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
             if(historyStep < 0) return;
-            const img = new Image();
-            img.onload = () => ctx.drawImage(img, 0, 0);
-            img.src = history[historyStep];
+            const img = new Image(); img.onload = () => ctx.drawImage(img, 0, 0); img.src = history[historyStep];
             localStorage.setItem('savedArtwork', history[historyStep]);
         }
 
@@ -431,168 +498,123 @@
         document.getElementById('redoBtn').onclick = () => { if(historyStep < history.length - 1) { historyStep++; restoreHistoryState(); }};
 
         function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
             ctx.lineCap = 'round'; ctx.lineJoin = 'round';
             ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
             const dataURL = localStorage.getItem('savedArtwork');
-            if (dataURL) {
-                const img = new Image(); img.onload = () => ctx.drawImage(img, 0, 0); img.src = dataURL;
-                if(history.length === 0) { history.push(dataURL); historyStep = 0; }
-            } else if(history.length === 0) saveStateToHistory();
+            if (dataURL) { const img = new Image(); img.onload = () => ctx.drawImage(img, 0, 0); img.src = dataURL; if(history.length === 0) { history.push(dataURL); historyStep = 0; } } 
+            else if(history.length === 0) saveStateToHistory();
         }
         window.addEventListener('resize', resizeCanvas);
 
-        function updateWorkspaceTransform() {
-            workspace.style.transform = `translate(${wsPanX}px, ${wsPanY}px) scale(${wsScale})`;
-        }
+        function updateWorkspaceTransform() { workspace.style.transform = `translate(${wsPanX}px, ${wsPanY}px) scale(${wsScale})`; }
+        function getCanvasPos(clientX, clientY) { return { x: (clientX - wsPanX) / wsScale, y: (clientY - wsPanY) / wsScale }; }
 
-        // Koordinaten Mapping! (WICHTIG für Offset Bug & Erweitert Modus)
-        function getCanvasPos(clientX, clientY) {
-            return {
-                x: (clientX - wsPanX) / wsScale,
-                y: (clientY - wsPanY) / wsScale
-            };
-        }
-
-        function drawLineSegment(x0, y0, x1, y1, isFist = false) {
+        function drawLineSegment(x0, y0, x1, y1, pressure, isFist = false) {
             ctx.lineCap = 'round'; ctx.lineJoin = 'round';
             ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1);
             
+            // Drucksensitivität S-Pen (pressure ist normal zw. 0 und 1)
+            let widthMultiplier = pressure > 0 ? Math.max(0.3, pressure * 2.5) : 1;
+            
             if (appMode === 'simpel') {
-                ctx.lineWidth = isFist ? 60 : lineWidth;
+                ctx.lineWidth = isFist ? 80 : baseLineWidth * widthMultiplier;
                 ctx.strokeStyle = isFist ? '#ffffff' : '#000000';
             } else {
-                ctx.lineWidth = lineWidth;
-                if (isEraser) {
-                    ctx.strokeStyle = '#ffffff';
-                } else if (isRainbow) {
-                    rainbowHue = (rainbowHue + 3) % 360; 
-                    ctx.strokeStyle = `hsl(${rainbowHue}, 100%, 50%)`;
-                } else {
-                    ctx.strokeStyle = currentColor;
-                }
+                ctx.lineWidth = baseLineWidth * widthMultiplier;
+                if (isEraser) { ctx.strokeStyle = '#ffffff'; } 
+                else if (isRainbow) { rainbowHue = (rainbowHue + 3) % 360; ctx.strokeStyle = `hsl(${rainbowHue}, 100%, 50%)`; } 
+                else { ctx.strokeStyle = currentColor; }
             }
             ctx.stroke();
         }
 
-        // --- Erweiterte Touch Logik (Simpel Fist & Erweitert Pan/Zoom) ---
-        let fistCount = 0; let fistTimer = null;
-        let initialPinchDist = null, initialScale = 1;
+        // --- Moderne PointerEvents (S-Pen, Touch, Maus + Capture) ---
+        let fistCount = 0, fistTimer = null, initialPinchDist = null, initialScale = 1;
 
-        function handleStart(e) {
-            if (isAppLocked) return;
-            // Erlaube Klicks auf UI Elemente nicht ins Canvas fließen
-            if(e.target.closest('.glass-menu') || e.target.closest('#toolbar') || e.target.classList.contains('draggable-shape')) return;
+        function handlePointerDown(e) {
+            if (isAppLocked || e.button === 2) return;
+            if(e.target.closest('.glass-menu') || e.target.closest('#toolbar') || e.target.closest('.draggable-shape')) return;
             
-            if(e.type === 'touchstart') e.preventDefault(); // Stoppt Scrollen
-
-            if (e.type === 'touchstart') {
-                const touches = e.touches;
-                
-                // Simpel-Modus: 3 Finger = Faust (Radierer / Clear)
-                if (appMode === 'simpel' && touches.length >= 3) {
-                    fistCount++;
-                    clearTimeout(fistTimer);
-                    fistTimer = setTimeout(() => fistCount = 0, 1500);
-                    if (fistCount >= 3) { // 3 mal Faust = Clear
-                        ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,canvas.width,canvas.height);
-                        saveStateToHistory();
-                        fistCount = 0;
-                        return;
-                    }
-                }
-
-                // Erweitert-Modus: 2 Finger = Zoom/Pan
-                if (appMode === 'erweitert' && touches.length === 2) {
-                    initialPinchDist = Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
-                    initialScale = wsScale;
-                    return; // Nicht zeichnen
-                }
-
-                // Normales Zeichnen
-                for (let i = 0; i < e.changedTouches.length; i++) {
-                    const id = e.changedTouches[i].identifier;
-                    const pos = getCanvasPos(e.changedTouches[i].clientX, e.changedTouches[i].clientY);
-                    ongoingTouches[id] = pos;
-                    const isFist = (appMode === 'simpel' && touches.length >= 3);
-                    drawLineSegment(pos.x, pos.y, pos.x + 0.1, pos.y + 0.1, isFist);
-                }
-            } else {
-                if(e.buttons === 3 || e.button === 2) return; // Rechtsklick ignorieren
-                const pos = getCanvasPos(e.clientX, e.clientY);
-                ongoingTouches['mouse'] = pos;
-                drawLineSegment(pos.x, pos.y, pos.x + 0.1, pos.y + 0.1);
+            // Pointer einfangen -> Malen geht weiter, auch wenn man die Toolbar streift!
+            canvas.setPointerCapture(e.pointerId);
+            
+            const activePointers = Object.keys(ongoingPointers).length + 1;
+            
+            // Simpel-Modus Faust (3+ Finger)
+            if (appMode === 'simpel' && activePointers >= 3) {
+                fistCount++; clearTimeout(fistTimer); fistTimer = setTimeout(() => fistCount = 0, 1500);
+                if (fistCount >= 3) { ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,canvas.width,canvas.height); saveStateToHistory(); fistCount = 0; return; }
             }
+
+            // Erweitert Pan/Zoom
+            if (appMode === 'erweitert' && activePointers === 2) {
+                const keys = Object.keys(ongoingPointers);
+                if(keys.length === 1) {
+                    const p1 = ongoingPointers[keys[0]];
+                    initialPinchDist = Math.hypot(p1.clientX - e.clientX, p1.clientY - e.clientY);
+                    initialScale = wsScale;
+                }
+            }
+
+            const pos = getCanvasPos(e.clientX, e.clientY);
+            ongoingPointers[e.pointerId] = { x: pos.x, y: pos.y, clientX: e.clientX, clientY: e.clientY };
+            
+            // Einen runden Punkt beim bloßen Antippen zeichnen
+            const isFist = (appMode === 'simpel' && activePointers >= 3);
+            drawLineSegment(pos.x, pos.y, pos.x + 0.1, pos.y + 0.1, e.pressure, isFist);
         }
 
-        function handleMove(e) {
-            if (isAppLocked) return;
-            if(e.target.closest('.glass-menu') || e.target.closest('#toolbar') || e.target.classList.contains('draggable-shape')) return;
-            if(e.type === 'touchmove') e.preventDefault();
+        function handlePointerMove(e) {
+            if (isAppLocked || !ongoingPointers[e.pointerId]) return;
+            
+            const activePointers = Object.keys(ongoingPointers).length;
 
-            if (e.type === 'touchmove') {
-                const touches = e.touches;
-                
-                // Erweitert: Pan & Zoom
-                if (appMode === 'erweitert' && touches.length === 2 && initialPinchDist) {
-                    const dist = Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
+            // Pan & Zoom
+            if (appMode === 'erweitert' && activePointers === 2 && initialPinchDist) {
+                ongoingPointers[e.pointerId].clientX = e.clientX;
+                ongoingPointers[e.pointerId].clientY = e.clientY;
+                const keys = Object.keys(ongoingPointers);
+                if(keys.length === 2) {
+                    const p1 = ongoingPointers[keys[0]], p2 = ongoingPointers[keys[1]];
+                    const dist = Math.hypot(p1.clientX - p2.clientX, p1.clientY - p2.clientY);
                     const scaleChange = dist / initialPinchDist;
                     wsScale = Math.min(Math.max(0.5, initialScale * scaleChange), 3);
-                    // Simples Panning
-                    const centerX = (touches[0].clientX + touches[1].clientX) / 2;
-                    const centerY = (touches[0].clientY + touches[1].clientY) / 2;
+                    const centerX = (p1.clientX + p2.clientX) / 2, centerY = (p1.clientY + p2.clientY) / 2;
                     wsPanX = centerX - (centerX - wsPanX) * (wsScale / initialScale);
                     wsPanY = centerY - (centerY - wsPanY) * (wsScale / initialScale);
                     updateWorkspaceTransform();
-                    return;
                 }
+                return;
+            }
 
-                // Normal Zeichnen
-                for (let i = 0; i < e.changedTouches.length; i++) {
-                    const id = e.changedTouches[i].identifier;
-                    if (ongoingTouches[id] && (appMode !== 'erweitert' || touches.length === 1 || appMode === 'simpel')) {
-                        const newPos = getCanvasPos(e.changedTouches[i].clientX, e.changedTouches[i].clientY);
-                        const isFist = (appMode === 'simpel' && touches.length >= 3);
-                        drawLineSegment(ongoingTouches[id].x, ongoingTouches[id].y, newPos.x, newPos.y, isFist);
-                        ongoingTouches[id] = newPos;
-                    }
-                }
-            } else {
-                if (ongoingTouches['mouse']) {
-                    const newPos = getCanvasPos(e.clientX, e.clientY);
-                    drawLineSegment(ongoingTouches['mouse'].x, ongoingTouches['mouse'].y, newPos.x, newPos.y);
-                    ongoingTouches['mouse'] = newPos;
-                }
+            // Normales Malen
+            if (appMode !== 'erweitert' || activePointers === 1 || appMode === 'simpel') {
+                const newPos = getCanvasPos(e.clientX, e.clientY);
+                const isFist = (appMode === 'simpel' && activePointers >= 3);
+                drawLineSegment(ongoingPointers[e.pointerId].x, ongoingPointers[e.pointerId].y, newPos.x, newPos.y, e.pressure, isFist);
+                ongoingPointers[e.pointerId].x = newPos.x;
+                ongoingPointers[e.pointerId].y = newPos.y;
+                ongoingPointers[e.pointerId].clientX = e.clientX;
+                ongoingPointers[e.pointerId].clientY = e.clientY;
             }
         }
 
-        function handleEnd(e) {
-            if (isAppLocked) return;
-            let changed = false;
-            if (e.type === 'touchend' || e.type === 'touchcancel') {
-                if(e.touches.length < 2) initialPinchDist = null;
-                for (let i = 0; i < e.changedTouches.length; i++) {
-                    if(ongoingTouches[e.changedTouches[i].identifier]) changed = true;
-                    delete ongoingTouches[e.changedTouches[i].identifier];
-                }
-            } else {
-                if(ongoingTouches['mouse']) changed = true;
-                delete ongoingTouches['mouse'];
+        function handlePointerUp(e) {
+            if(ongoingPointers[e.pointerId]) {
+                delete ongoingPointers[e.pointerId];
+                canvas.releasePointerCapture(e.pointerId);
+                if(Object.keys(ongoingPointers).length < 2) initialPinchDist = null;
+                saveStateToHistory();
             }
-            if(changed) saveStateToHistory();
         }
 
-        document.addEventListener('touchstart', handleStart, { passive: false });
-        document.addEventListener('touchmove', handleMove, { passive: false });
-        document.addEventListener('touchend', handleEnd);
-        document.addEventListener('touchcancel', handleEnd);
-        document.addEventListener('mousedown', handleStart);
-        document.addEventListener('mousemove', handleMove);
-        document.addEventListener('mouseup', handleEnd);
+        canvas.addEventListener('pointerdown', handlePointerDown);
+        canvas.addEventListener('pointermove', handlePointerMove);
+        canvas.addEventListener('pointerup', handlePointerUp);
+        canvas.addEventListener('pointercancel', handlePointerUp);
 
-        // --- Toolbar Logik ---
+        // --- Toolbar Logik & Werkzeuge ---
         function updateActiveButton(btn) { document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active-btn')); btn.classList.add('active-btn'); }
         document.querySelectorAll('.color-btn:not(.dynamic-color)').forEach(btn => {
             btn.onclick = () => {
@@ -617,44 +639,59 @@
             }
         };
 
+        // Mülleimer: In Einfach direkt löschen. In Erweitert fragen.
         document.getElementById('trashBtn').onclick = async () => {
-            const yes = await showConfirm("Löschen?", "Willst du alles löschen?", "Ja, weg damit", "Nein");
-            if(yes) {
-                ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-                document.querySelectorAll('.draggable-shape').forEach(el => el.remove());
-                saveStateToHistory();
+            if(appMode === 'erweitert') {
+                const yes = await showConfirm("Löschen?", "Willst du alles löschen?");
+                if(!yes) return;
             }
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            document.querySelectorAll('.draggable-shape').forEach(el => el.remove());
+            saveStateToHistory();
         };
 
-        // --- Erweitert: Formen hinzufügen & ziehen ---
-        document.getElementById('addShapeBtn').onclick = () => {
-            const shape = document.createElement('div');
-            shape.className = 'draggable-shape';
-            // Simples SVG Smiley als Platzhalter für "Formen"
-            shape.innerHTML = `<svg viewBox="0 0 100 100" width="100" height="100"><circle cx="50" cy="50" r="45" fill="${isRainbow ? 'gold' : currentColor}" stroke="black" stroke-width="3"/><circle cx="35" cy="40" r="5" fill="black"/><circle cx="65" cy="40" r="5" fill="black"/><path d="M 30 65 Q 50 85 70 65" stroke="black" stroke-width="5" fill="none" stroke-linecap="round"/></svg>`;
-            shape.style.left = window.innerWidth/2 + 'px';
-            shape.style.top = window.innerHeight/2 + 'px';
+        // --- Erweitert: Bild Import & Formen ---
+        function createDraggable(contentHtml) {
+            const wrap = document.createElement('div');
+            wrap.className = 'draggable-shape';
+            wrap.innerHTML = contentHtml;
+            wrap.style.left = window.innerWidth/2 + 'px';
+            wrap.style.top = window.innerHeight/2 + 'px';
             
-            // Dragging Logik für die Form
             let isDragging = false;
-            shape.addEventListener('touchstart', (e)=>{ isDragging = true; e.stopPropagation(); });
-            shape.addEventListener('touchmove', (e)=>{ 
+            wrap.addEventListener('pointerdown', (e)=>{ isDragging = true; wrap.setPointerCapture(e.pointerId); e.stopPropagation(); });
+            wrap.addEventListener('pointermove', (e)=>{ 
                 if(isDragging){
                     e.stopPropagation(); e.preventDefault();
-                    shape.style.left = (e.touches[0].clientX - wsPanX)/wsScale + 'px';
-                    shape.style.top = (e.touches[0].clientY - wsPanY)/wsScale + 'px';
+                    wrap.style.left = (e.clientX - wsPanX)/wsScale + 'px';
+                    wrap.style.top = (e.clientY - wsPanY)/wsScale + 'px';
                 }
             });
-            shape.addEventListener('touchend', ()=>{ isDragging = false; });
-            document.getElementById('workspace').appendChild(shape);
+            wrap.addEventListener('pointerup', (e)=>{ isDragging = false; wrap.releasePointerCapture(e.pointerId); });
+            document.getElementById('workspace').appendChild(wrap);
+        }
+
+        document.getElementById('addShapeBtn').onclick = () => {
+            createDraggable(`<svg viewBox="0 0 100 100" width="120" height="120"><circle cx="50" cy="50" r="45" fill="${isRainbow ? 'gold' : currentColor}" stroke="black" stroke-width="3"/><circle cx="35" cy="40" r="5" fill="black"/><circle cx="65" cy="40" r="5" fill="black"/><path d="M 30 65 Q 50 85 70 65" stroke="black" stroke-width="5" fill="none" stroke-linecap="round"/></svg>`);
         };
+
+        document.getElementById('importImgBtn').onclick = () => document.getElementById('imageInputHidden').click();
+        document.getElementById('imageInputHidden').onchange = (e) => {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                createDraggable(`<img src="${ev.target.result}" draggable="false">`);
+            };
+            reader.readAsDataURL(file);
+        };
+
 
         // --- Magic Gestures (5 Finger / 2 Finger / PC) ---
         let magicTimer = null, fingersDown = 0;
         
         async function openBaseMenu() {
             if(isAppLocked && document.getElementById('lockOverlay').style.display !== 'none') {
-                // Secret Admin Bypass während Gist Lock
                 const yes = await showConfirm("System", "Admin-Bypass?");
                 if(yes) {
                     const p = await showPrompt("PIN:", "password", "OK", "Abbruch");
@@ -676,44 +713,35 @@
             fingersDown = e.touches.length;
             clearTimeout(magicTimer);
             if(fingersDown === 5) magicTimer = setTimeout(() => { if(fingersDown===5) openBaseMenu(); }, 2000);
-            if(fingersDown === 2 && (appMode === 'einfach' || appMode === 'erweitert')) magicTimer = setTimeout(() => { if(fingersDown===2) openSaveLoadMenu(); }, 2000);
+            if(fingersDown === 2 && appMode === 'erweitert') magicTimer = setTimeout(() => { if(fingersDown===2) openSaveLoadMenu(); }, 2000);
         });
         window.addEventListener('touchend', (e) => { fingersDown = e.touches.length; clearTimeout(magicTimer); });
         
-        // PC Fallback
         window.addEventListener('mousedown', (e) => {
             if(e.buttons === 3) { clearTimeout(magicTimer); magicTimer = setTimeout(() => openBaseMenu(), 3000); }
         });
         window.addEventListener('mouseup', () => clearTimeout(magicTimer));
 
-        // --- Basis Menü ---
+
+        // --- Basis Menü & Eltern Menü ---
         document.getElementById('bmBtnClose').onclick = () => { document.getElementById('baseMenu').classList.remove('show'); setTimeout(()=>document.getElementById('baseMenu').style.display='none',300); };
-        document.getElementById('bmBtnPrint').onclick = () => { window.print(); };
+        document.getElementById('bmBtnPrint').onclick = () => window.print();
         document.getElementById('bmBtnSaveLoad').onclick = () => { document.getElementById('bmBtnClose').click(); setTimeout(openSaveLoadMenu, 350); };
         
         document.getElementById('bmBtnParent').onclick = async () => {
             const pin = localStorage.getItem('parentPin');
             if (pin) {
                 const input = await showPrompt("Eltern PIN eingeben:", "password", "OK", "Abbrechen", true);
-                if (input === 'ADMIN_BYPASS') {
-                    document.getElementById('bmBtnClose').click();
-                    setTimeout(openAdminMenu, 300);
-                } else if (input === pin) {
-                    document.getElementById('bmBtnClose').click();
-                    setTimeout(openParentMenu, 300);
-                } else if(input !== null) await showAlert("Fehler", "Falsche PIN!");
-            } else {
-                document.getElementById('bmBtnClose').click();
-                setTimeout(openParentMenu, 300);
-            }
+                if (input === 'ADMIN_BYPASS') { document.getElementById('bmBtnClose').click(); setTimeout(openAdminMenu, 300); } 
+                else if (input === pin) { document.getElementById('bmBtnClose').click(); setTimeout(openParentMenu, 300); } 
+                else if(input !== null) await showAlert("Fehler", "Falsche PIN!");
+            } else { document.getElementById('bmBtnClose').click(); setTimeout(openParentMenu, 300); }
         };
 
-        // --- Eltern Menü ---
         function openParentMenu() {
             document.getElementById('appModeSelect').value = appMode;
             const pAllowed = localStorage.getItem('printAllowed') !== 'false';
             document.getElementById('pmBtnTogglePrint').innerText = `Drucken im Basis-Menü: ${pAllowed ? 'AN' : 'AUS'}`;
-            
             document.getElementById('parentMenu').style.display = 'flex';
             setTimeout(()=>document.getElementById('parentMenu').classList.add('show'), 10);
         }
@@ -721,11 +749,8 @@
         document.getElementById('pmBtnClose').onclick = () => { 
             document.getElementById('parentMenu').classList.remove('show'); 
             setTimeout(()=>document.getElementById('parentMenu').style.display='none',300); 
-            
-            // Einstellungen übernehmen
             const newMode = document.getElementById('appModeSelect').value;
             if(newMode !== appMode) { appMode = newMode; localStorage.setItem('appMode', appMode); applyMode(); }
-            
             const newColor = document.getElementById('themeColorInput').value;
             if(newColor !== themeColor) { themeColor = newColor; localStorage.setItem('themeColor', themeColor); applyTheme(); }
         };
@@ -759,7 +784,6 @@
             if(!pAllowed) { bmBtn.removeAttribute('disabled'); bmBtn.style.opacity = '1'; } 
             else { bmBtn.setAttribute('disabled', 'true'); bmBtn.style.opacity = '0.5'; }
         };
-        // Initial setup for print button
         if(localStorage.getItem('printAllowed') === 'false') { document.getElementById('bmBtnPrint').setAttribute('disabled','true'); document.getElementById('bmBtnPrint').style.opacity = '0.5'; }
 
         document.getElementById('pmBtnForcePrint').onclick = () => window.print();
@@ -769,6 +793,7 @@
             if(p === '1104') { document.getElementById('pmBtnClose').click(); setTimeout(openAdminMenu, 300); }
             else if(p !== null) await showAlert("Fehler", "Falsche PIN!");
         };
+
 
         // --- Admin Menü ---
         function openAdminMenu() { renderLogs(); document.getElementById('adminMenu').style.display='flex'; setTimeout(()=>document.getElementById('adminMenu').classList.add('show'),10); }
@@ -782,18 +807,16 @@
         document.getElementById('amBtnOfflineMode').onclick = async () => {
             const state = localStorage.getItem('offlineModeDisabled') === 'true';
             localStorage.setItem('offlineModeDisabled', (!state).toString());
-            await showAlert("Geändert", `Offline-Modus ist nun: ${!state ? 'GESPERRT' : 'ERLAUBT'}`);
-            checkLocks();
+            await showAlert("Geändert", `Offline-Modus ist nun: ${!state ? 'GESPERRT' : 'ERLAUBT'}`); checkLocks();
         };
 
-        // --- Speichern & Laden (Galerie & Export) ---
+        // --- Speichern & Laden ---
         function renderSaveList() {
-            const list = document.getElementById('saveList');
-            list.innerHTML = '';
+            const list = document.getElementById('saveList'); list.innerHTML = '';
             const saves = JSON.parse(localStorage.getItem('artworksGallery') || '{}');
             for(let name in saves) {
                 const item = document.createElement('div'); item.className = 'save-item';
-                item.innerHTML = `<span>${name}</span> <div><button class="menu-btn blue" style="padding:5px; width:auto; display:inline;" onclick="loadArt('${name}')">Laden</button> <button class="menu-btn red" style="padding:5px; width:auto; display:inline;" onclick="delArt('${name}')">X</button></div>`;
+                item.innerHTML = `<span>${name}</span> <div><button class="menu-btn blue" style="padding:6px 12px; width:auto; display:inline;" onclick="loadArt('${name}')">Laden</button> <button class="menu-btn red" style="padding:6px 12px; width:auto; display:inline;" onclick="delArt('${name}')">X</button></div>`;
                 list.appendChild(item);
             }
         }
@@ -801,12 +824,10 @@
         document.getElementById('slBtnClose').onclick = () => { document.getElementById('saveLoadMenu').classList.remove('show'); setTimeout(()=>document.getElementById('saveLoadMenu').style.display='none',300); };
         
         document.getElementById('slBtnSave').onclick = async () => {
-            const name = await showPrompt("Wie soll das Bild heißen?", "text", "Speichern");
+            const name = await showPrompt("Bildname?", "text", "Speichern");
             if(name) {
                 const saves = JSON.parse(localStorage.getItem('artworksGallery') || '{}');
-                saves[name] = canvas.toDataURL();
-                localStorage.setItem('artworksGallery', JSON.stringify(saves));
-                renderSaveList();
+                saves[name] = canvas.toDataURL(); localStorage.setItem('artworksGallery', JSON.stringify(saves)); renderSaveList();
             }
         };
 
@@ -821,25 +842,20 @@
         window.delArt = (name) => { const saves = JSON.parse(localStorage.getItem('artworksGallery') || '{}'); delete saves[name]; localStorage.setItem('artworksGallery', JSON.stringify(saves)); renderSaveList(); };
 
         document.getElementById('slBtnExport').onclick = () => {
-            const data = canvas.toDataURL();
-            const json = JSON.stringify({ image: data });
-            const blob = new Blob([json], {type: "application/json"});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = 'Kunstwerk.json'; a.click();
+            const blob = new Blob([JSON.stringify({ image: canvas.toDataURL() })], {type: "application/json"});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'Kunstwerk.json'; a.click();
         };
 
         document.getElementById('slBtnImport').onclick = () => document.getElementById('importFile').click();
         document.getElementById('importFile').onchange = (e) => {
-            const file = e.target.files[0];
-            if(!file) return;
+            const file = e.target.files[0]; if(!file) return;
             const reader = new FileReader();
             reader.onload = (ev) => {
                 try { const obj = JSON.parse(ev.target.result); if(obj.image) { const img = new Image(); img.onload = () => { ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,canvas.width,canvas.height); ctx.drawImage(img,0,0); saveStateToHistory(); }; img.src = obj.image; document.getElementById('slBtnClose').click(); } } catch(err) { alert("Fehlerhafte Datei"); }
-            };
-            reader.readAsText(file);
+            }; reader.readAsText(file);
         };
 
-        // --- Locks System ---
+        // --- Locks (Offline & Bedtime) ---
         function checkLocks() {
             const offlineDisabled = localStorage.getItem('offlineModeDisabled') === 'true';
             if (offlineDisabled && !navigator.onLine) { isAppLocked = true; document.getElementById('offlineOverlay').style.display = 'flex'; document.getElementById('bedtimeOverlay').style.display = 'none'; return; } 
@@ -870,20 +886,15 @@
             if (!navigator.onLine) return; 
             try {
                 const res = await fetch('https://api.github.com/gists/305f300ae73a102e623b3148202af353', { cache: 'no-store', headers: {'Pragma': 'no-cache'} });
-                if (!res.ok) return;
-                processGist((await res.json()).files['command.txt'].content);
+                if (!res.ok) return; processGist((await res.json()).files['command.txt'].content);
             } catch (e) { }
         }
 
         function processGist(text) {
             const lines = text.split(/\r?\n/).map(l => l.trim());
             if (lines[0].startsWith('lock')) {
-                if (localStorage.getItem('ignoredLockState') !== text) {
-                    isAppLocked = true; document.getElementById('lockReason').innerText = lines[0].split(';')[1] || 'Gesperrt'; document.getElementById('lockOverlay').style.display = 'flex';
-                }
-            } else {
-                document.getElementById('lockOverlay').style.display = 'none'; localStorage.removeItem('ignoredLockState'); checkLocks();
-            }
+                if (localStorage.getItem('ignoredLockState') !== text) { isAppLocked = true; document.getElementById('lockReason').innerText = lines[0].split(';')[1] || 'Gesperrt'; document.getElementById('lockOverlay').style.display = 'flex'; }
+            } else { document.getElementById('lockOverlay').style.display = 'none'; localStorage.removeItem('ignoredLockState'); checkLocks(); }
 
             const lastCmd = localStorage.getItem('lastExecutedCmd') || '-';
             if (lines[1] !== '-' && lines[1] !== lastCmd) {
@@ -912,8 +923,7 @@
         setInterval(fetchGist, 15000); if (localStorage.getItem('lastGistContent')) processGist(localStorage.getItem('lastGistContent')); fetchGist();
 
         // Init
-        resizeCanvas();
-        checkLocks();
+        resizeCanvas(); checkLocks();
         if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{}));
     </script>
 </body>
